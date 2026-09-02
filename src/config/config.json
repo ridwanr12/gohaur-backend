@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "your_password_here",
+    "database": "gohaur_dev",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "your_password_here",
+    "database": "gohaur_test",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "your_password_here",
+    "database": "gohaur_prod",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  }
+}
