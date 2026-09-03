@@ -1,8 +1,14 @@
 import logger from '../utils/logger.js';
-import { ValidationError } from 'sequelize';
+import { ValidationError, UniqueConstraintError } from 'sequelize';
 
+/**
+ * Global Error Handler Middleware
+ * Menangkap semua error yang "dilempar" (throw) atau diteruskan via next(err) dari Controllers/Services.
+ * Berfungsi untuk menstandarisasi format error JSON yang dikembalikan ke client (Frontend/Mobile App).
+ */
 const errorHandler = (err, req, res, next) => {
-    // Log the error
+    // 1. Catat error di log file atau console (menggunakan winston logger)
+    // Supaya developer bisa melacak apa yang salah.
     logger.error({
         message: err.message,
         stack: err.stack,
@@ -12,7 +18,23 @@ const errorHandler = (err, req, res, next) => {
         timestamp: new Date().toISOString()
     });
 
-    // Handle Sequelize validation errors
+    // 2. Tangani Error Duplikasi Data dari Database (Contoh: Email sudah terdaftar)
+    if (err instanceof UniqueConstraintError) {
+        return res.status(409).json({
+            success: false,
+            status: 409, // 409 Conflict
+            timestamp: new Date().toISOString(),
+            path: req.originalUrl,
+            method: req.method,
+            message: ['Resource already exists'], // Pesan umum untuk user
+            details: err.errors.map(e => ({
+                field: e.path, // Kolom yang duplikat (misal: 'email')
+                message: e.message // Pesan spesifik dari database
+            }))
+        });
+    }
+
+    // 3. Tangani Error Validasi Data dari Database (Contoh: Kolom wajib tidak diisi, tipe data salah)
     if (err instanceof ValidationError) {
         const validationErrors = err.errors.map(error => ({
             field: error.path,
@@ -30,18 +52,21 @@ const errorHandler = (err, req, res, next) => {
         });
     }
 
-    // Prepare the error response
+    // 4. Siapkan struktur standar JSON untuk error yang tidak tertangkap oleh blok di atas
+    // Bisa error HTTP biasa (AppError) atau error sistem 500 (Internal Server Error)
     const errorResponse = {
         success: false,
-        status: err.statusCode || 500,
+        status: err.statusCode || 500, // Jika ada status code khusus (misal 404 dari AppError), pakai itu. Jika tidak, anggap 500.
         timestamp: err.timestamp || new Date().toISOString(),
         path: req.originalUrl,
         method: req.method,
+        // Pastikan format pesan selalu array, agar frontend lebih mudah mem-parsingnya
         message: Array.isArray(err.message) ? err.message : [err.message || 'Internal Server Error'],
         details: err.details || null
     };
 
-    // Add request information for 400 errors
+    // 5. Khusus untuk error 400 (Bad Request / Validasi Gagal), 
+    // sisipkan data yang dikirim user agar mereka tahu di mana letak kesalahannya
     if (err.statusCode >= 400 && err.statusCode < 500) {
         errorResponse.request = {
             body: req.body,
@@ -50,6 +75,7 @@ const errorHandler = (err, req, res, next) => {
         };
     }
 
+    // 6. Kirim JSON error-nya ke client
     res.status(err.statusCode || 500).json(errorResponse);
 };
 

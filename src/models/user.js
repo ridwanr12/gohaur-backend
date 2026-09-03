@@ -5,9 +5,10 @@ export default (sequelize) => {
     static associate(models) {
       User.hasMany(models.Store, { foreignKey: 'user_id' });
       User.belongsToMany(models.Role, { 
-        through: 'user_roles',
+        through: models.UserRole,
         foreignKey: 'user_id',
-        otherKey: 'role_id'
+        otherKey: 'role_id',
+        timestamps: false
       });
       User.hasMany(models.Order, { 
         foreignKey: 'user_id',

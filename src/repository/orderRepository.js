@@ -1,14 +1,27 @@
 import models, { sequelize } from '../models/index.js';
 const { Order, User, Store, Product, OrderProduct, Delivery } = models;
 
-async function create(orderData) {
-  return await Order.create(orderData);
+/**
+ * Menyimpan data pesanan utama ke tabel Orders.
+ * Fungsi ini bisa menerima objek transaksi (transaction) agar prosesnya atomik.
+ */
+async function create(orderData, transaction) {
+  return await Order.create(orderData, { transaction });
 }
 
-async function createOrderProducts(orderProducts) {
-  return await OrderProduct.bulkCreate(orderProducts);
+/**
+ * Menyimpan data barang-barang (produk) yang dipesan ke tabel OrderProducts.
+ * Menggunakan bulkCreate untuk menyimpan array of objects sekaligus dalam satu query.
+ */
+async function createOrderProducts(orderProducts, transaction) {
+  return await OrderProduct.bulkCreate(orderProducts, { transaction });
 }
 
+/**
+ * Mencari pesanan berdasarkan ID.
+ * Melakukan "JOIN" (include) ke tabel User (sebagai pembeli dan kurir), Store, Product, dan Delivery.
+ * Tujuannya agar data yang direturn sudah lengkap, tidak cuma ID-ID saja.
+ */
 async function findById(id) {
   return await Order.findByPk(id, {
     include: [
@@ -43,8 +56,13 @@ async function findById(id) {
   });
 }
 
+/**
+ * Mencari semua pesanan milik seorang pembeli (user_id).
+ * Digunakan untuk halaman "My Orders" di aplikasi.
+ * Dilengkapi dengan fitur pagination (findAndCountAll).
+ */
 async function findByUserId(userId, { page = 1, limit = 10 } = {}) {
-  const offset = (page - 1) * limit;
+  const offset = (page - 1) * limit; // Menghitung data yang dilewati (offset)
   
   const { rows: orders, count: total } = await Order.findAndCountAll({
     where: { user_id: userId },
@@ -93,6 +111,10 @@ async function findByUserId(userId, { page = 1, limit = 10 } = {}) {
   };
 }
 
+/**
+ * Mencari semua pesanan yang masuk ke sebuah toko (store_id).
+ * Digunakan untuk halaman "Pesanan Toko Saya" bagi seller.
+ */
 async function findByStoreId(storeId, { page = 1, limit = 10 } = {}) {
   const offset = (page - 1) * limit;
   
@@ -143,10 +165,16 @@ async function findByStoreId(storeId, { page = 1, limit = 10 } = {}) {
   };
 }
 
-async function update(id, updateData) {
-  const order = await Order.findByPk(id);
+/**
+ * Mengubah data pesanan berdasarkan ID.
+ * Biasanya dipakai untuk mengupdate status pesanan.
+ */
+async function update(id, updateData, transaction) {
+  // Cari dulu pesanannya ada atau tidak
+  const order = await Order.findByPk(id, { transaction });
   if (!order) return null;
-  return await order.update(updateData);
+  // Jika ada, lakukan update
+  return await order.update(updateData, { transaction });
 }
 
 async function getRandomCourier() {

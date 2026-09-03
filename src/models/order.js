@@ -13,9 +13,10 @@ export default (sequelize) => {
       });
       Order.belongsTo(models.Store, { foreignKey: 'store_id' });
       Order.belongsToMany(models.Product, { 
-        through: 'order_products',
+        through: models.OrderProduct,
         foreignKey: 'order_id',
-        otherKey: 'product_id'
+        otherKey: 'product_id',
+        timestamps: false
       });
       Order.hasOne(models.Delivery, { foreignKey: 'order_id' });
     }

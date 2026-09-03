@@ -36,6 +36,15 @@ export default {
       },
       {
         id: uuidv4(),
+        username: 'seller2',
+        email: 'seller2@example.com',
+        password: await bcrypt.hash('seller123', 10),
+        phone: '+6281234567895',
+        location: 'Jakarta, Indonesia',
+        created_at: new Date()
+      },
+      {
+        id: uuidv4(),
         username: 'buyer1',
         email: 'buyer@example.com',
         password: await bcrypt.hash('buyer123', 10),
@@ -72,13 +81,19 @@ export default {
       },
       {
         id: uuidv4(),
-        user_id: users[2].id,
+        user_id: users[2].id, // This is seller2
+        role_id: roleIdMap.seller,
+        assigned_at: new Date()
+      },
+      {
+        id: uuidv4(),
+        user_id: users[3].id, // This is buyer1
         role_id: roleIdMap.buyer,
         assigned_at: new Date()
       },
       {
         id: uuidv4(),
-        user_id: users[3].id,
+        user_id: users[4].id, // This is courier1
         role_id: roleIdMap.courier,
         assigned_at: new Date()
       }

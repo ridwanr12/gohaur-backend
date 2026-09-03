@@ -5,9 +5,10 @@ export default (sequelize) => {
     static associate(models) {
       Product.belongsTo(models.Store, { foreignKey: 'store_id' });
       Product.belongsToMany(models.Order, { 
-        through: 'order_products',
+        through: models.OrderProduct,
         foreignKey: 'product_id',
-        otherKey: 'order_id'
+        otherKey: 'order_id',
+        timestamps: false
       });
     }
   }

@@ -56,6 +56,14 @@ async function remove(id) {
   return true;
 }
 
+async function incrementStock(id, quantity, transaction) {
+  return await Product.increment('stock', { by: quantity, where: { id }, transaction });
+}
+
+async function decrementStock(id, quantity, transaction) {
+  return await Product.decrement('stock', { by: quantity, where: { id }, transaction });
+}
+
 async function findAll({ page = 1, limit = 10, search = '', storeId = null } = {}) {
   const offset = (page - 1) * limit;
   const where = {
@@ -97,5 +105,7 @@ export {
   create,
   update,
   remove,
-  findAll
+  findAll,
+  incrementStock,
+  decrementStock
 };

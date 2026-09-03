@@ -4,9 +4,10 @@ export default (sequelize) => {
   class Role extends Model {
     static associate(models) {
       Role.belongsToMany(models.User, {
-        through: 'user_roles',
+        through: models.UserRole,
         foreignKey: 'role_id',
-        otherKey: 'user_id'
+        otherKey: 'user_id',
+        timestamps: false
       });
     }
   }

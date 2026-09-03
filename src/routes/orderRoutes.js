@@ -10,6 +10,7 @@ import { validateCreateOrder, validateUpdateOrderStatus } from '../middlewares/v
 import authMiddleware from '../middlewares/auth.js';
 import checkRole from '../middlewares/checkRole.js';
 
+// Membuat router Express baru untuk menangani rute terkait 'Orders'
 const router = express.Router();
 
 /**
@@ -19,19 +20,43 @@ const router = express.Router();
  *   description: Order management endpoints
  */
 
+// Semua rute di bawah ini wajib melewati pengecekan login (authMiddleware)
+// Jika token JWT tidak valid/hilang, request akan langsung ditolak (401 Unauthorized)
 router.use(authMiddleware);
 
-// Buyer routes
+// ==========================================
+// Rute untuk Pembeli (Buyer)
+// ==========================================
+
+// Membuat pesanan baru. Hanya user dengan role 'buyer' yang bisa mengakses ini.
+// Data yang dikirim (req.body) akan divalidasi dulu oleh 'validateCreateOrder' sebelum masuk ke 'createOrder' controller.
 router.post('/', checkRole(['buyer']), validateCreateOrder, createOrder);
+
+// Melihat daftar pesanan milik buyer yang sedang login.
 router.get('/my-orders', checkRole(['buyer']), getMyOrders);
 
-// Store owner routes
+// ==========================================
+// Rute untuk Penjual (Seller / Store Owner)
+// ==========================================
+
+// Melihat semua pesanan yang masuk ke toko tertentu (berdasarkan storeId).
+// Hanya seller yang bisa mengakses ini.
 router.get('/store/:storeId', checkRole(['seller']), getStoreOrders);
 
-// Shared routes (buyer, seller, courier can view order details)
+// ==========================================
+// Rute Bersama (Shared)
+// ==========================================
+
+// Melihat detail satu pesanan spesifik (berdasarkan ID pesanan).
+// Bisa diakses oleh buyer, seller, dan kurir (karena mereka semua butuh melihat detail pesanan).
 router.get('/:id', checkRole(['buyer', 'seller', 'courier']), getOrder);
 
-// Seller and admin can update order status
+// ==========================================
+// Rute Pembaruan Status
+// ==========================================
+
+// Mengubah status pesanan (misal: pending -> approved).
+// Saat ini hanya seller yang diizinkan mengubah status. Data status baru akan divalidasi oleh 'validateUpdateOrderStatus'.
 router.put('/:id/status', 
   checkRole(['seller']), 
   validateUpdateOrderStatus, 
