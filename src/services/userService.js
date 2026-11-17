@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import * as userRepository from '../repository/userRepository.js';
 import AppError from '../utils/AppError.js';
 import JwtUtils from '../utils/jwt.js';
-import asyncHandler from '../middlewares/asyncHandler.js';
 
 class UserDTO {
   constructor(data) {
@@ -17,32 +16,32 @@ class UserDTO {
 
 async function register(userData) {
   const dto = new UserDTO(userData);
-  const role = userData.role || "buyer";
-  
+  const role = userData.role || 'buyer';
+
   const existingUser = await userRepository.findByEmailOrUsername(dto.email, dto.username);
   if (existingUser) {
     throw new AppError('Email or username already exists', 400);
   }
 
   const hashedPassword = await bcrypt.hash(dto.password, 10);
-  
+
   const user = await userRepository.create({
     id: uuidv4(),
     ...dto,
-    password: hashedPassword
+    password: hashedPassword,
   });
 
   await userRepository.assignRole(user, role);
 
-  const token = JwtUtils.generateToken({ 
+  const token = JwtUtils.generateToken({
     id: user.id,
     email: user.email,
-    roles: [role]
+    roles: [role],
   });
 
   return {
     user: sanitizeUser(user),
-    token
+    token,
   };
 }
 
@@ -60,12 +59,12 @@ async function login(credentials) {
   const token = JwtUtils.generateToken({
     id: user.id,
     email: user.email,
-    roles: user.Roles.map(role => role.name)
+    roles: user.Roles.map(role => role.name),
   });
 
   return {
     user: sanitizeUser(user),
-    token
+    token,
   };
 }
 
@@ -97,7 +96,7 @@ async function getAllUsers(queryParams) {
   const result = await userRepository.findAll(queryParams);
   return {
     users: result.users.map(user => sanitizeUser(user)),
-    pagination: result.pagination
+    pagination: result.pagination,
   };
 }
 
@@ -121,14 +120,14 @@ async function updateUserRole(userId, roles) {
 }
 
 function sanitizeUser(user) {
-    const sanitized = user.toJSON();
-    delete sanitized.password;
-    if (sanitized.Roles) {
-      sanitized.roles = sanitized.Roles.map(role => role.name);
-      delete sanitized.Roles;
-    }
-    return sanitized;
+  const sanitized = user.toJSON();
+  delete sanitized.password;
+  if (sanitized.Roles) {
+    sanitized.roles = sanitized.Roles.map(role => role.name);
+    delete sanitized.Roles;
   }
+  return sanitized;
+}
 
 export {
   register,
@@ -139,5 +138,5 @@ export {
   getAllUsers,
   getUserById,
   updateUserRole,
-  sanitizeUser
+  sanitizeUser,
 };

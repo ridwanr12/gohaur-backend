@@ -26,10 +26,4 @@ async function deleteAccount(req, res) {
   res.json(ApiResponse.success(null, 'Account deleted successfully'));
 }
 
-export {
-  register,
-  login,
-  getProfile,
-  updateProfile,
-  deleteAccount
-};
+export { register, login, getProfile, updateProfile, deleteAccount };

@@ -4,9 +4,12 @@ import {
   getOrder,
   getMyOrders,
   getStoreOrders,
-  updateOrderStatus
+  updateOrderStatus,
 } from '../controllers/orderController.js';
-import { validateCreateOrder, validateUpdateOrderStatus } from '../middlewares/validators/validateOrder.js';
+import {
+  validateCreateOrder,
+  validateUpdateOrderStatus,
+} from '../middlewares/validators/validateOrder.js';
 import authMiddleware from '../middlewares/auth.js';
 import checkRole from '../middlewares/checkRole.js';
 
@@ -57,14 +60,9 @@ router.get('/:id', checkRole(['buyer', 'seller', 'courier']), getOrder);
 
 // Mengubah status pesanan (misal: pending -> approved).
 // Saat ini hanya seller yang diizinkan mengubah status. Data status baru akan divalidasi oleh 'validateUpdateOrderStatus'.
-router.put('/:id/status', 
-  checkRole(['seller']), 
-  validateUpdateOrderStatus, 
-  updateOrderStatus
-);
+router.put('/:id/status', checkRole(['seller']), validateUpdateOrderStatus, updateOrderStatus);
 
 export default router;
-
 
 /**
  * @swagger
@@ -178,7 +176,7 @@ export default router;
  *     responses:
  *       200:
  *         description: List of orders
- * 
+ *
  * /api/orders/{id}:
  *   get:
  *     summary: Get order by ID
@@ -197,7 +195,7 @@ export default router;
  *         description: Order details
  *       404:
  *         description: Order not found
- * 
+ *
  * /api/orders/store/{storeId}:
  *   get:
  *     summary: Get store orders
@@ -222,7 +220,7 @@ export default router;
  *     responses:
  *       200:
  *         description: List of store orders
- * 
+ *
  * /api/orders/{id}/status:
  *   put:
  *     summary: Update order status

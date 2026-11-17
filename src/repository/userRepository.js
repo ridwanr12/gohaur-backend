@@ -1,26 +1,28 @@
 import models from '../models/index.js';
 const { User, Role } = models;
-import { Op } from 'sequelize'; 
+import { Op } from 'sequelize';
 
 async function findByEmailOrUsername(email, username) {
   return await User.findOne({
     where: {
-        [Op.or]: [{ email }, { username }]
-    }
+      [Op.or]: [{ email }, { username }],
+    },
   });
 }
 
 async function findByEmail(email, includeRoles = false) {
   const options = {
-    where: { email }
+    where: { email },
   };
 
   if (includeRoles) {
-    options.include = [{
-      model: Role,
-      attributes: ['name'],
-      through: { attributes: [] }
-    }];
+    options.include = [
+      {
+        model: Role,
+        attributes: ['name'],
+        through: { attributes: [] },
+      },
+    ];
   }
 
   return await User.findOne(options);
@@ -28,16 +30,18 @@ async function findByEmail(email, includeRoles = false) {
 
 async function findById(id, excludePassword = false) {
   const options = {
-    where: { id }
+    where: { id },
   };
 
   if (excludePassword) {
     options.attributes = { exclude: ['password'] };
-    options.include = [{
-      model: Role,
-      attributes: ['name'],
-      through: { attributes: [] }
-    }];
+    options.include = [
+      {
+        model: Role,
+        attributes: ['name'],
+        through: { attributes: [] },
+      },
+    ];
   }
 
   return await User.findByPk(id, options);
@@ -67,33 +71,38 @@ async function assignRole(user, roleName) {
   return true;
 }
 
-async function findAll({ 
-  search = '', 
-  page = 1, 
-  limit = 10, 
-  sortBy = 'created_at', 
-  sortOrder = 'DESC' 
+async function findAll({
+  search = '',
+  page = 1,
+  limit = 10,
+  sortBy = 'created_at',
+  sortOrder = 'DESC',
 } = {}) {
   const offset = (page - 1) * limit;
-  
-  const whereClause = search ? {
-    [Op.or]: [  // Use Op directly instead of models.Sequelize.Op
-      { username: { [Op.iLike]: `%${search}%` } },
-      { email: { [Op.iLike]: `%${search}%` } }
-    ]
-  } : {};
+
+  const whereClause = search
+    ? {
+        [Op.or]: [
+          // Use Op directly instead of models.Sequelize.Op
+          { username: { [Op.iLike]: `%${search}%` } },
+          { email: { [Op.iLike]: `%${search}%` } },
+        ],
+      }
+    : {};
 
   const { rows: users, count: total } = await User.findAndCountAll({
     where: whereClause,
     attributes: { exclude: ['password'] },
-    include: [{
-      model: Role,
-      attributes: ['name'],
-      through: { attributes: [] }
-    }],
+    include: [
+      {
+        model: Role,
+        attributes: ['name'],
+        through: { attributes: [] },
+      },
+    ],
     order: [[sortBy, sortOrder]],
     limit,
-    offset
+    offset,
   });
 
   return {
@@ -102,18 +111,18 @@ async function findAll({
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit),
-      limit: parseInt(limit)
-    }
+      limit: parseInt(limit),
+    },
   };
 }
 
 async function updateRoles(user, roleNames) {
   const roles = await Role.findAll({
     where: {
-      name: roleNames
-    }
+      name: roleNames,
+    },
   });
-  
+
   await user.setRoles(roles);
   return true;
 }
@@ -127,5 +136,5 @@ export {
   remove,
   assignRole,
   findAll,
-  updateRoles
+  updateRoles,
 };

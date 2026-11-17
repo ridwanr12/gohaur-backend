@@ -5,9 +5,9 @@ async function createFeedback(req, res) {
   const feedbackData = {
     order_id: req.body.order_id,
     rating: req.body.rating,
-    description: req.body.description
+    description: req.body.description,
   };
-  
+
   const feedback = await feedbackService.createFeedback(feedbackData, req.user.id);
   res.status(201).json(ApiResponse.success({ feedback }, 'Feedback submitted successfully'));
 }
@@ -21,12 +21,12 @@ async function getFeedback(req, res) {
 async function getStoreFeedbacks(req, res) {
   const { storeId } = req.params;
   const { page, limit } = req.query;
-  
+
   const result = await feedbackService.getStoreFeedbacks(storeId, {
     page: parseInt(page) || 1,
-    limit: parseInt(limit) || 10
+    limit: parseInt(limit) || 10,
   });
-  
+
   res.json(ApiResponse.success(result));
 }
 
@@ -40,9 +40,9 @@ async function updateFeedback(req, res) {
   const { id } = req.params;
   const updateData = {
     rating: req.body.rating,
-    description: req.body.description
+    description: req.body.description,
   };
-  
+
   const feedback = await feedbackService.updateFeedback(id, updateData, req.user.id);
   res.json(ApiResponse.success({ feedback }, 'Feedback updated successfully'));
 }
@@ -66,5 +66,5 @@ export {
   getOrderFeedback,
   updateFeedback,
   deleteFeedback,
-  getStoreRating
+  getStoreRating,
 };

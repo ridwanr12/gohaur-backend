@@ -10,17 +10,19 @@ async function findById(id) {
     include: [
       {
         model: Order,
-        include: [{
-          model: User,
-          as: 'buyer',
-          attributes: ['id', 'username', 'email']
-        }]
+        include: [
+          {
+            model: User,
+            as: 'buyer',
+            attributes: ['id', 'username', 'email'],
+          },
+        ],
       },
       {
         model: User,
-        attributes: ['id', 'username', 'email']
-      }
-    ]
+        attributes: ['id', 'username', 'email'],
+      },
+    ],
   });
 }
 
@@ -30,17 +32,19 @@ async function findByOrderId(orderId) {
     include: [
       {
         model: Order,
-        include: [{
-          model: User,
-          as: 'buyer',
-          attributes: ['id', 'username', 'email']
-        }]
+        include: [
+          {
+            model: User,
+            as: 'buyer',
+            attributes: ['id', 'username', 'email'],
+          },
+        ],
       },
       {
         model: User,
-        attributes: ['id', 'username', 'email']
-      }
-    ]
+        attributes: ['id', 'username', 'email'],
+      },
+    ],
   });
 }
 
@@ -50,9 +54,4 @@ async function update(id, updateData) {
   return await delivery.update(updateData);
 }
 
-export {
-  create,
-  findById,
-  findByOrderId,
-  update
-};
+export { create, findById, findByOrderId, update };

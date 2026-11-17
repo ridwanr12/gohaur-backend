@@ -6,7 +6,16 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"app.js\" \"src/**/*.js\"",
+    "format:check": "prettier --check \"app.js\" \"src/**/*.js\"",
+    "verify": "npm run lint && npm test",
+    "db:create": "sequelize-cli db:create --config src/config/config.js",
+    "db:migrate": "sequelize-cli db:migrate --config src/config/config.js --migrations-path src/migrations --seeders-path src/seeders --models-path src/models",
+    "db:migrate:status": "sequelize-cli db:migrate:status --config src/config/config.js --migrations-path src/migrations --seeders-path src/seeders --models-path src/models",
+    "db:seed": "sequelize-cli db:seed:all --config src/config/config.js --migrations-path src/migrations --seeders-path src/seeders --models-path src/models"
   },
   "keywords": [],
   "author": "",
@@ -25,13 +34,16 @@
     "sequelize": "^6.37.6",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "uuid": "^8.3.2",
     "winston": "^3.17.0"
   },
   "devDependencies": {
     "@babel/core": "^7.26.9",
     "@babel/preset-env": "^7.26.9",
     "babel-jest": "^29.7.0",
+    "eslint": "^8.57.1",
     "jest": "^29.7.0",
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.9",
+    "prettier": "^2.8.8"
   }
 }

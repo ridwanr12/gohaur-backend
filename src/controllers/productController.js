@@ -13,7 +13,7 @@ async function getStoreProducts(req, res) {
   const result = await productService.getStoreProducts(storeId, {
     page: parseInt(page) || 1,
     limit: parseInt(limit) || 10,
-    search
+    search,
   });
   res.json(ApiResponse.success(result));
 }
@@ -21,7 +21,7 @@ async function getStoreProducts(req, res) {
 async function createProduct(req, res) {
   const productData = {
     ...req.body,
-    store_id: req.params.storeId
+    store_id: req.params.storeId,
   };
   const product = await productService.createProduct(productData);
   res.status(201).json(ApiResponse.success({ product }, 'Product created successfully'));
@@ -45,7 +45,7 @@ async function getAllProducts(req, res) {
     page: parseInt(page) || 1,
     limit: parseInt(limit) || 10,
     search,
-    storeId
+    storeId,
   });
   res.json(ApiResponse.success(products));
 }
@@ -56,5 +56,5 @@ export {
   createProduct,
   updateProduct,
   deleteProduct,
-  getAllProducts
+  getAllProducts,
 };

@@ -18,6 +18,14 @@ import feedbackRoutes from './src/routes/feedbackRoutes.js';
 
 dotenv.config(); // Memuat variabel dari .env
 
+// Gagal cepat (fail fast) kalau konfigurasi wajib tidak lengkap.
+// Lebih baik server menolak start daripada berjalan dengan secret kosong.
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  throw new Error(
+    'JWT_SECRET wajib diisi dan minimal 32 karakter. Salin .env.example menjadi .env lalu isi nilainya.',
+  );
+}
+
 const app = express();
 const port = process.env.PORT || 3000; // Menggunakan port dari .env atau 3000 sebagai fallback
 
@@ -46,8 +54,6 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/feedback', feedbackRoutes);
-
-
 
 // ==========================================
 // Error Handling

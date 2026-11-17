@@ -4,37 +4,37 @@ export default {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
-        primaryKey: true
+        primaryKey: true,
       },
       username: {
         type: Sequelize.STRING,
         unique: true,
-        allowNull: false
+        allowNull: false,
       },
       email: {
         type: Sequelize.STRING,
         unique: true,
-        allowNull: false
+        allowNull: false,
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: false
+        allowNull: false,
       },
       phone: {
-        type: Sequelize.STRING
+        type: Sequelize.STRING,
       },
       location: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT,
       },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      }
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
     });
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Users');
-  }
+  },
 };

@@ -34,8 +34,4 @@ async function updateDeliveryStatus(id, status) {
   return await deliveryRepository.update(id, { status });
 }
 
-export {
-  getDeliveryById,
-  getDeliveryByOrderId,
-  updateDeliveryStatus
-};
+export { getDeliveryById, getDeliveryByOrderId, updateDeliveryStatus };

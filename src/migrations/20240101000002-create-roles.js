@@ -4,17 +4,17 @@ export default {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
-        primaryKey: true
+        primaryKey: true,
       },
       name: {
         type: Sequelize.ENUM('buyer', 'seller', 'courier', 'admin'),
         allowNull: false,
-        unique: true
-      }
+        unique: true,
+      },
     });
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('Roles');
-  }
+  },
 };

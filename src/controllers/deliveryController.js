@@ -20,8 +20,4 @@ async function updateDeliveryStatus(req, res) {
   res.json(ApiResponse.success({ delivery }, 'Delivery status updated successfully'));
 }
 
-export {
-  getDelivery,
-  getOrderDelivery,
-  updateDeliveryStatus
-};
+export { getDelivery, getOrderDelivery, updateDeliveryStatus };

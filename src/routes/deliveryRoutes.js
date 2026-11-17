@@ -2,7 +2,7 @@ import express from 'express';
 import {
   getDelivery,
   getOrderDelivery,
-  updateDeliveryStatus
+  updateDeliveryStatus,
 } from '../controllers/deliveryController.js';
 import { body } from 'express-validator';
 import validateResult from '../middlewares/validators/validateResult.js';
@@ -23,10 +23,11 @@ router.use(authMiddleware);
 // Validate delivery status update
 const validateDeliveryStatus = [
   body('status')
-    .notEmpty().withMessage('Status is required')
+    .notEmpty()
+    .withMessage('Status is required')
     .isIn(['order_received', 'out_for_delivery', 'completed'])
     .withMessage('Invalid delivery status'),
-  validateResult
+  validateResult,
 ];
 
 // Get delivery details (courier, seller, buyer can view)
@@ -36,11 +37,7 @@ router.get('/:id', checkRole(['courier', 'seller', 'buyer']), getDelivery);
 router.get('/order/:orderId', checkRole(['courier', 'seller', 'buyer']), getOrderDelivery);
 
 // Update delivery status (courier only)
-router.put('/:id/status', 
-  checkRole(['courier']), 
-  validateDeliveryStatus, 
-  updateDeliveryStatus
-);
+router.put('/:id/status', checkRole(['courier']), validateDeliveryStatus, updateDeliveryStatus);
 
 export default router;
 
@@ -85,7 +82,7 @@ export default router;
  *         description: Delivery details
  *       404:
  *         description: Delivery not found
- * 
+ *
  * /api/deliveries/order/{orderId}:
  *   get:
  *     summary: Get delivery by order ID
@@ -104,7 +101,7 @@ export default router;
  *         description: Delivery details
  *       404:
  *         description: Delivery not found
- * 
+ *
  * /api/deliveries/{id}/status:
  *   put:
  *     summary: Update delivery status

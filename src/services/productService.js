@@ -52,5 +52,5 @@ export {
   createProduct,
   updateProduct,
   deleteProduct,
-  getAllProducts
+  getAllProducts,
 };
