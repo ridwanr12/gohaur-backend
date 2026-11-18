@@ -36,6 +36,18 @@ export default sequelize => {
       description: {
         type: DataTypes.TEXT,
       },
+      image: {
+        type: DataTypes.TEXT,
+      },
+      address: {
+        type: DataTypes.TEXT,
+      },
+      latitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
+      longitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
     },
     {
       sequelize,

@@ -2,56 +2,36 @@ import * as orderService from '../services/orderService.js';
 import ApiResponse from '../utils/ApiResponse.js';
 
 /**
- * Membuat pesanan baru.
- * Fungsi ini bertugas menerima data dari request, lalu meneruskannya ke Service.
- * Jika sukses, akan mengembalikan status HTTP 201 (Created).
- *
- * @param {Object} req - Express request object (berisi req.body dan req.user)
- * @param {Object} res - Express response object
+ * Membuat pesanan baru. Ongkir dan total dihitung di service.
  */
 async function createOrder(req, res) {
-  // Mengekstrak data yang dibutuhkan dari body request
   const orderData = {
     store_id: req.body.store_id,
-    shipping_cost: req.body.shipping_cost,
     products: req.body.products,
-    payment_proof: req.body.payment_proof, // Menambahkan bukti pembayaran jika ada
+    payment_proof: req.body.payment_proof,
+    delivery_address: req.body.delivery_address,
+    delivery_latitude: req.body.delivery_latitude,
+    delivery_longitude: req.body.delivery_longitude,
   };
 
-  // Memanggil logika bisnis (Service) untuk memproses pesanan
-  // req.user.id didapat dari authMiddleware yang sudah mengecek token JWT
   const order = await orderService.createOrder(orderData, req.user.id);
-
-  // Mengembalikan response sukses menggunakan utility ApiResponse
   res.status(201).json(ApiResponse.success({ order }, 'Order created successfully'));
 }
 
-/**
- * Mengambil detail sebuah pesanan berdasarkan ID.
- */
 async function getOrder(req, res) {
-  const { id } = req.params; // Mengambil parameter :id dari URL
-  const order = await orderService.getOrderById(id, req.user);
+  const order = await orderService.getOrderById(req.params.id, req.user);
   res.json(ApiResponse.success({ order }));
 }
 
-/**
- * Mengambil semua daftar pesanan milik pengguna yang sedang login (pembeli).
- * Mendukung pagination (halaman) melalui query parameters (misal: ?page=1&limit=10).
- */
 async function getMyOrders(req, res) {
-  const { page, limit } = req.query; // Mengambil query string dari URL
+  const { page, limit } = req.query;
   const orders = await orderService.getUserOrders(req.user.id, {
-    page: parseInt(page) || 1, // Jika tidak ada, default halaman 1
-    limit: parseInt(limit) || 10, // Jika tidak ada, default tampilkan 10 data
+    page: parseInt(page) || 1,
+    limit: parseInt(limit) || 10,
   });
   res.json(ApiResponse.success(orders));
 }
 
-/**
- * Mengambil daftar pesanan yang masuk ke sebuah toko tertentu.
- * Hanya pemilik toko yang bersangkutan yang bisa mengakses ini (diatur di routes).
- */
 async function getStoreOrders(req, res) {
   const { page, limit } = req.query;
   const orders = await orderService.getStoreOrders(req.params.storeId, req.user.id, {
@@ -61,17 +41,40 @@ async function getStoreOrders(req, res) {
   res.json(ApiResponse.success(orders));
 }
 
-/**
- * Mengubah status sebuah pesanan (misal: dari "pending" ke "approved").
- */
-async function updateOrderStatus(req, res) {
-  const { id } = req.params; // ID pesanan dari URL
-  const { status } = req.body; // Status baru dari body request JSON
-
-  // Meminta Service untuk melakukan update status
-  const order = await orderService.updateOrderStatus(id, status, req.user);
-
-  res.json(ApiResponse.success({ order }, 'Order status updated successfully'));
+async function acceptOrder(req, res) {
+  const order = await orderService.acceptOrder(req.params.id, req.user.id);
+  res.json(ApiResponse.success({ order }, 'Order accepted'));
 }
 
-export { createOrder, getOrder, getMyOrders, getStoreOrders, updateOrderStatus };
+async function rejectOrder(req, res) {
+  const order = await orderService.rejectOrder(
+    req.params.id,
+    req.user.id,
+    req.body.rejection_reason,
+  );
+  res.json(ApiResponse.success({ order }, 'Order rejected'));
+}
+
+async function shipOrder(req, res) {
+  const order = await orderService.shipOrder(req.params.id, req.user.id, {
+    courier_name: req.body.courier_name,
+    courier_plate: req.body.courier_plate,
+  });
+  res.json(ApiResponse.success({ order }, 'Order shipped'));
+}
+
+async function completeOrder(req, res) {
+  const order = await orderService.completeOrder(req.params.id, req.user.id);
+  res.json(ApiResponse.success({ order }, 'Order completed'));
+}
+
+export {
+  createOrder,
+  getOrder,
+  getMyOrders,
+  getStoreOrders,
+  acceptOrder,
+  rejectOrder,
+  shipOrder,
+  completeOrder,
+};

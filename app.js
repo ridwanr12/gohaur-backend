@@ -1,6 +1,7 @@
 import 'express-async-errors'; // Memungkinkan penggunaan async/await tanpa harus try-catch di setiap route
 import express from 'express'; // Framework utama untuk membuat server
 import cors from 'cors'; // Agar API bisa diakses dari domain/port yang berbeda (Cross-Origin)
+import path from 'path';
 import dotenv from 'dotenv'; // Untuk membaca variabel lingkungan dari file .env
 import swaggerUi from 'swagger-ui-express'; // Untuk menampilkan dokumentasi API interaktif
 import swaggerSpec from './src/utils/swagger.js'; // Konfigurasi dokumentasi API
@@ -13,8 +14,8 @@ import authRoutes from './src/routes/authRoutes.js';
 import storeRoutes from './src/routes/storeRoutes.js';
 import productRoutes from './src/routes/productRoutes.js';
 import orderRoutes from './src/routes/orderRoutes.js';
-import deliveryRoutes from './src/routes/deliveryRoutes.js';
 import feedbackRoutes from './src/routes/feedbackRoutes.js';
+import uploadRoutes from './src/routes/uploadRoutes.js';
 
 dotenv.config(); // Memuat variabel dari .env
 
@@ -36,6 +37,9 @@ app.use(cors()); // Izinkan semua akses CORS
 app.use(express.json()); // Izinkan Express untuk mem-parsing request body berformat JSON
 app.use(express.urlencoded({ extended: true })); // Izinkan URL-encoded body (misal: form submit)
 
+// File hasil upload (foto toko, produk, bukti bayar) disajikan statis
+app.use('/uploads', express.static(path.resolve('uploads')));
+
 // Basic route
 // ==========================================
 // Dokumentasi (Swagger UI)
@@ -52,8 +56,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/deliveries', deliveryRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // ==========================================
 // Error Handling

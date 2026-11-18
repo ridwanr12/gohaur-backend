@@ -196,12 +196,7 @@ router.post('/store/:storeId', checkRole(['seller']), validateCreateProduct, cre
  *       200:
  *         description: Product updated successfully
  */
-router.put(
-  '/:id',
-  checkRole(['seller']),
-  //   validateUpdateProduct,
-  updateProduct,
-);
+router.put('/:id', checkRole(['seller']), validateUpdateProduct, updateProduct);
 
 /**
  * @swagger

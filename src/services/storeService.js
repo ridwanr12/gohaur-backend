@@ -24,6 +24,17 @@ async function createStore(storeData) {
   }
   return await storeRepository.create(storeData);
 }
+const STORE_EDITABLE_FIELDS = ['name', 'description', 'image', 'address', 'latitude', 'longitude'];
+
+function pickEditableFields(updateData) {
+  const picked = {};
+  STORE_EDITABLE_FIELDS.forEach(field => {
+    if (updateData[field] !== undefined) {
+      picked[field] = updateData[field];
+    }
+  });
+  return picked;
+}
 
 async function updateStore(id, updateData, requesterId) {
   const existingStore = await storeRepository.findById(id);
@@ -33,7 +44,25 @@ async function updateStore(id, updateData, requesterId) {
   if (existingStore.user_id !== requesterId) {
     throw new AppError('You are not allowed to update this store', 403);
   }
-  return await storeRepository.update(id, updateData);
+
+  const payload = pickEditableFields(updateData);
+
+  if (payload.latitude !== undefined && payload.latitude !== null) {
+    const lat = Number(payload.latitude);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) {
+      throw new AppError('Invalid store latitude', 400);
+    }
+    payload.latitude = lat;
+  }
+  if (payload.longitude !== undefined && payload.longitude !== null) {
+    const lng = Number(payload.longitude);
+    if (!Number.isFinite(lng) || Math.abs(lng) > 180) {
+      throw new AppError('Invalid store longitude', 400);
+    }
+    payload.longitude = lng;
+  }
+
+  return await storeRepository.update(id, payload);
 }
 
 async function deleteStore(id, requesterId) {

@@ -18,6 +18,19 @@ const errorHandler = (err, req, res, next) => {
     timestamp: new Date().toISOString(),
   });
 
+  // 2. Tangani error upload file (multer)
+  if (err.name === 'MulterError') {
+    return res.status(400).json({
+      success: false,
+      status: 400,
+      timestamp: new Date().toISOString(),
+      path: req.originalUrl,
+      method: req.method,
+      message: [err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 2 MB)' : err.message],
+      details: null,
+    });
+  }
+
   // 2. Tangani Error Duplikasi Data dari Database (Contoh: Email sudah terdaftar)
   if (err instanceof UniqueConstraintError) {
     return res.status(409).json({

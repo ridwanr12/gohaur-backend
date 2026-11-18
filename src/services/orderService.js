@@ -3,65 +3,104 @@ import * as productRepository from '../repository/productRepository.js';
 import * as storeRepository from '../repository/storeRepository.js';
 import AppError from '../utils/AppError.js';
 import { sequelize } from '../models/index.js';
+import {
+  haversineDistanceKm,
+  MAX_DELIVERY_DISTANCE_KM,
+  PACKAGING_FEE,
+  getShippingCost,
+} from '../utils/geo.js';
 
 /**
- * Fungsi untuk membuat pesanan (Order) baru.
- * Di sinilah pusat validasi bisnis terjadi (cek stok, hitung total harga, dll).
+ * Membuat pesanan baru.
  *
- * @param {Object} orderData - Data pesanan dari request body.
- * @param {string} userId - ID dari user yang sedang login (pembeli).
+ * Ongkir dan total dihitung di sini (bukan dari client), termasuk validasi
+ * jarak Haversine antara titik toko dan titik kirim buyer.
+ *
+ * @param {Object} orderData
+ * @param {string} userId
  */
 async function createOrder(orderData, userId) {
-  // 1. Verifikasi apakah semua produk yang dipesan benar-benar ada di database
-  // Kita menggunakan Promise.all untuk mengambil data produk secara bersamaan agar lebih cepat
   const products = await Promise.all(
     orderData.products.map(async item => {
       const product = await productRepository.findById(item.product_id);
       if (!product) {
         throw new AppError(`Product with id ${item.product_id} not found`, 404);
       }
-
-      // 2. Mengecek ketersediaan stok
       if (product.stock < item.quantity) {
-        throw new AppError(`Product "${product.name}" does not have enough stock`, 404);
+        throw new AppError(`Product "${product.name}" does not have enough stock`, 400);
       }
       return product;
     }),
   );
 
-  // 3. Memastikan semua produk yang dipesan berasal dari toko yang sama
-  // (Sistem ini belum mendukung keranjang belanja dari berbagai toko secara bersamaan dalam 1 order)
   if (!products.every(p => p.store_id === orderData.store_id)) {
     throw new AppError('All products must be from the same store', 400);
   }
 
-  // 4. Menghitung total harga seluruh pesanan (harga produk * kuantitas)
-  const total_price = orderData.products.reduce((sum, item) => {
+  const store = await storeRepository.findById(orderData.store_id);
+  if (!store) {
+    throw new AppError('Store not found', 404);
+  }
+  if (store.latitude == null || store.longitude == null) {
+    throw new AppError('Store location is not set yet', 400);
+  }
+
+  const deliveryLat = Number(orderData.delivery_latitude);
+  const deliveryLng = Number(orderData.delivery_longitude);
+
+  if (!Number.isFinite(deliveryLat) || !Number.isFinite(deliveryLng)) {
+    throw new AppError('Delivery location is required', 400);
+  }
+  if (Math.abs(deliveryLat) > 90 || Math.abs(deliveryLng) > 180) {
+    throw new AppError('Delivery location is invalid', 400);
+  }
+  if (!orderData.delivery_address || !orderData.delivery_address.trim()) {
+    throw new AppError('Delivery address is required', 400);
+  }
+
+  const distanceKm = haversineDistanceKm(store.latitude, store.longitude, deliveryLat, deliveryLng);
+
+  if (distanceKm >= MAX_DELIVERY_DISTANCE_KM) {
+    throw new AppError(
+      `Delivery distance is too far (${distanceKm.toFixed(
+        2,
+      )} km, max ${MAX_DELIVERY_DISTANCE_KM} km)`,
+      400,
+    );
+  }
+
+  const shippingCost = getShippingCost(distanceKm);
+  if (shippingCost == null) {
+    throw new AppError('Delivery distance is out of range', 400);
+  }
+
+  const productTotal = orderData.products.reduce((sum, item) => {
     const product = products.find(p => p.id === item.product_id);
-    return sum + product.price * item.quantity;
+    return sum + parseFloat(product.price) * item.quantity;
   }, 0);
 
-  // 5. Membuat "Transaksi Database" (Database Transaction).
-  // Transaksi memastikan bahwa jika salah satu proses insert gagal, seluruh proses sebelumnya akan dibatalkan (rollback).
-  // Ini mencegah terjadinya data yang setengah-setengah tersimpan di database.
+  const totalPrice = productTotal + shippingCost + PACKAGING_FEE;
+
   const t = await sequelize.transaction();
 
   try {
-    // 6a. Simpan data utama ke tabel Orders
-    // Kita mengirimkan objek 't' agar query ini berjalan di dalam transaksi
     const order = await orderRepository.create(
       {
         user_id: userId,
         store_id: orderData.store_id,
-        shipping_cost: orderData.shipping_cost,
-        total_price,
+        shipping_cost: shippingCost,
+        packaging_fee: PACKAGING_FEE,
+        total_price: totalPrice,
         payment_proof: orderData.payment_proof,
-        status: 'pending', // Status awal pesanan selalu 'pending'
+        delivery_address: orderData.delivery_address.trim(),
+        delivery_latitude: deliveryLat,
+        delivery_longitude: deliveryLng,
+        distance_km: Number(distanceKm.toFixed(2)),
+        status: 'pending',
       },
       t,
     );
 
-    // 6b. Simpan rincian produk yang dipesan ke tabel OrderProducts
     await orderRepository.createOrderProducts(
       orderData.products.map(item => ({
         order_id: order.id,
@@ -73,13 +112,9 @@ async function createOrder(orderData, userId) {
       t,
     );
 
-    // 7. Jika semua berhasil, simpan permanen ke database (commit)
     await t.commit();
-
-    // Kembalikan data pesanan yang baru saja dibuat
     return await orderRepository.findById(order.id);
   } catch (error) {
-    // Jika ada error di tengah jalan, batalkan semua perubahan di database (rollback)
     await t.rollback();
     throw error;
   }
@@ -107,10 +142,9 @@ function assertCanViewOrder(order, requester) {
   const roles = requester.roles || [];
   const isAdmin = roles.includes('admin');
   const isBuyer = order.user_id === requester.id;
-  const isCourier = order.courier_id === requester.id;
   const isStoreOwner = Boolean(order.Store && order.Store.user_id === requester.id);
 
-  if (!isAdmin && !isBuyer && !isCourier && !isStoreOwner) {
+  if (!isAdmin && !isBuyer && !isStoreOwner) {
     throw new AppError('You are not allowed to view this order', 403);
   }
 }
@@ -133,109 +167,139 @@ async function getStoreOrders(storeId, userId, options) {
   return await orderRepository.findByStoreId(storeId, options);
 }
 
-/**
- * Alur status pesanan yang sah. Tujuannya mencegah lompatan status
- * (misal pending langsung completed) dan mencegah perubahan setelah selesai.
- */
-const ALLOWED_TRANSITIONS = {
-  pending: ['approved', 'canceled'],
-  approved: ['out_for_delivery', 'canceled'],
-  out_for_delivery: ['completed', 'canceled'],
-  completed: [],
-  canceled: [],
-};
-
-/**
- * Fungsi untuk memperbarui status pesanan.
- * Ini melibatkan logika kompleks seperti pemotongan stok dan penugasan kurir.
- */
-async function updateOrderStatus(id, status, requester) {
-  // 1. Ambil data pesanan saat ini dari database
-  const orderBefore = await orderRepository.findById(id);
-  if (!orderBefore) {
-    throw new AppError('Order not found', 404);
-  }
-
-  // 2. Pastikan hanya pemilik toko yang boleh mengubah status pesanan
-  if (requester && orderBefore.Store && orderBefore.Store.user_id !== requester.id) {
+function assertStoreOwner(order, userId) {
+  if (!order.Store || order.Store.user_id !== userId) {
     throw new AppError('You are not allowed to update this order', 403);
   }
+}
 
-  const currentStatus = orderBefore.status;
+/**
+ * Seller menerima pesanan. Stok dipotong di sini, bukan saat buyer membuat order.
+ */
+async function acceptOrder(id, userId) {
+  const order = await orderRepository.findById(id);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+  assertStoreOwner(order, userId);
 
-  // 3. Idempotent: status sama tidak perlu diproses ulang
-  if (currentStatus === status) {
-    return orderBefore;
+  if (order.status !== 'pending') {
+    throw new AppError(`Only pending orders can be accepted (current: ${order.status})`, 400);
   }
 
-  // 4. Validasi transisi status
-  const allowedNextStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
-  if (!allowedNextStatuses.includes(status)) {
-    throw new AppError(`Cannot change order status from "${currentStatus}" to "${status}"`, 400);
-  }
+  const orderProducts = order.Products || [];
+  orderProducts.forEach(product => {
+    const quantity = product.order_products?.quantity ?? 0;
+    if (product.stock < quantity) {
+      throw new AppError(`Product "${product.name}" does not have enough stock`, 400);
+    }
+  });
 
-  // Membuat transaksi karena kita akan mengupdate 2 tabel (Orders dan Products)
   const t = await sequelize.transaction();
-
   try {
-    let order;
+    await Promise.all(
+      orderProducts.map(product =>
+        productRepository.decrementStock(product.id, product.order_products?.quantity ?? 0, t),
+      ),
+    );
 
-    // Skenario 1: Pesanan disetujui oleh toko ('approved')
-    if (status === 'approved') {
-      // A. Cari kurir acak secara otomatis
-      const courier = await orderRepository.getRandomCourier();
-      if (!courier) {
-        throw new AppError('No couriers available', 400);
-      }
-
-      const orderProducts = orderBefore.Products;
-
-      // B. Validasi Ulang Stok: Pastikan stok masih ada sebelum memotongnya.
-      orderProducts.forEach(prod => {
-        if (prod.stock < prod.order_products.quantity) {
-          throw new AppError(`Product "${prod.name}" does not have enough stock`, 404);
-        }
-      });
-
-      // C. Potong Stok: Menggunakan fitur 'decrement' agar aman dari race condition
-      await Promise.all(
-        orderProducts.map(async prod => {
-          await productRepository.decrementStock(prod.id, prod.order_products.quantity, t);
-        }),
-      );
-
-      // D. Update status pesanan dan hubungkan kurir ke pesanan tersebut
-      order = await orderRepository.update(id, { courier_id: courier.id, status }, t);
-    }
-    // Skenario 2: Pesanan dibatalkan ('canceled')
-    else if (status === 'canceled') {
-      // Jika pesanan sebelumnya sudah di-'approved' (sudah potong stok dan assign kurir),
-      // maka kita harus MENGEMBALIKAN stok barang ke database.
-      if (orderBefore.courier_id) {
-        const orderProducts = orderBefore.Products;
-
-        // Tambah kembali stok (increment)
-        await Promise.all(
-          orderProducts.map(async prod => {
-            await productRepository.incrementStock(prod.id, prod.order_products.quantity, t);
-          }),
-        );
-      }
-      order = await orderRepository.update(id, { status }, t);
-    }
-    // Skenario 3: Perubahan status biasa (misal: 'out_for_delivery', 'completed')
-    else {
-      order = await orderRepository.update(id, { status }, t);
-    }
-
-    // Terapkan semua perubahan ke database
+    await orderRepository.update(id, { status: 'accepted', accepted_at: new Date() }, t);
     await t.commit();
-    return order;
+    return await orderRepository.findById(id);
   } catch (error) {
-    // Batalkan perubahan jika ada error (stok tidak jadi terpotong, pesanan tidak jadi update)
     await t.rollback();
     throw error;
   }
 }
 
-export { createOrder, getOrderById, getUserOrders, getStoreOrders, updateOrderStatus };
+/**
+ * Seller menolak pesanan. Alasan opsional.
+ */
+async function rejectOrder(id, userId, reason) {
+  const order = await orderRepository.findById(id);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+  assertStoreOwner(order, userId);
+
+  if (order.status !== 'pending') {
+    throw new AppError(`Only pending orders can be rejected (current: ${order.status})`, 400);
+  }
+
+  await orderRepository.update(id, {
+    status: 'rejected',
+    rejected_at: new Date(),
+    rejection_reason: reason ? String(reason).trim() : null,
+  });
+
+  return await orderRepository.findById(id);
+}
+
+/**
+ * Seller mengirim pesanan. Nama pengirim dan plat nomor wajib diisi
+ * supaya buyer tahu siapa yang mengantar.
+ */
+async function shipOrder(id, userId, { courier_name, courier_plate }) {
+  const order = await orderRepository.findById(id);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+  assertStoreOwner(order, userId);
+
+  if (order.status !== 'accepted') {
+    throw new AppError(`Only accepted orders can be shipped (current: ${order.status})`, 400);
+  }
+
+  const courierName = courier_name ? String(courier_name).trim() : '';
+  const courierPlate = courier_plate ? String(courier_plate).trim() : '';
+
+  if (!courierName) {
+    throw new AppError('Courier name is required', 400);
+  }
+  if (!courierPlate) {
+    throw new AppError('Courier plate number is required', 400);
+  }
+
+  await orderRepository.update(id, {
+    status: 'shipped',
+    shipped_at: new Date(),
+    courier_name: courierName,
+    courier_plate: courierPlate,
+  });
+
+  return await orderRepository.findById(id);
+}
+
+/**
+ * Buyer menyatakan pesanan sudah diterima.
+ */
+async function completeOrder(id, userId) {
+  const order = await orderRepository.findById(id);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+  if (order.user_id !== userId) {
+    throw new AppError('You are not allowed to complete this order', 403);
+  }
+  if (order.status !== 'shipped') {
+    throw new AppError('Only shipped orders can be completed', 400);
+  }
+
+  await orderRepository.update(id, {
+    status: 'completed',
+    completed_at: new Date(),
+  });
+
+  return await orderRepository.findById(id);
+}
+
+export {
+  createOrder,
+  getOrderById,
+  getUserOrders,
+  getStoreOrders,
+  acceptOrder,
+  rejectOrder,
+  shipOrder,
+  completeOrder,
+};

@@ -7,10 +7,6 @@ export default sequelize => {
         foreignKey: 'user_id',
         as: 'buyer',
       });
-      Order.belongsTo(models.User, {
-        foreignKey: 'courier_id',
-        as: 'courier',
-      });
       Order.belongsTo(models.Store, { foreignKey: 'store_id' });
       Order.belongsToMany(models.Product, {
         through: models.OrderProduct,
@@ -18,7 +14,6 @@ export default sequelize => {
         otherKey: 'product_id',
         timestamps: false,
       });
-      Order.hasOne(models.Delivery, { foreignKey: 'order_id' });
     }
   }
 
@@ -54,11 +49,49 @@ export default sequelize => {
         },
       },
       status: {
-        type: DataTypes.ENUM('pending', 'approved', 'out_for_delivery', 'completed', 'canceled'),
+        type: DataTypes.ENUM('pending', 'accepted', 'rejected', 'shipped', 'completed'),
         defaultValue: 'pending',
       },
       payment_proof: {
         type: DataTypes.TEXT,
+      },
+      delivery_address: {
+        type: DataTypes.TEXT,
+      },
+      delivery_latitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
+      delivery_longitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
+      distance_km: {
+        type: DataTypes.DECIMAL(6, 2),
+      },
+      packaging_fee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 2000,
+      },
+      courier_name: {
+        type: DataTypes.STRING(255),
+      },
+      courier_plate: {
+        type: DataTypes.STRING(50),
+      },
+      rejection_reason: {
+        type: DataTypes.TEXT,
+      },
+      accepted_at: {
+        type: DataTypes.DATE,
+      },
+      shipped_at: {
+        type: DataTypes.DATE,
+      },
+      completed_at: {
+        type: DataTypes.DATE,
+      },
+      rejected_at: {
+        type: DataTypes.DATE,
       },
       shipping_cost: {
         type: DataTypes.DECIMAL(10, 2),

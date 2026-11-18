@@ -27,8 +27,8 @@ export const validateRegister = [
     .trim()
     .notEmpty()
     .withMessage('Role is required')
-    .isIn(['admin', 'buyer', 'seller', 'courier'])
-    .withMessage('Role must be admin, buyer, seller, or courier'),
+    .isIn(['buyer', 'seller'])
+    .withMessage('Role must be buyer or seller'),
 
   body('phone')
     .optional()
@@ -62,6 +62,10 @@ export const validateUpdateProfile = [
     .optional()
     .matches(/^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/)
     .withMessage('Invalid phone number format'),
+
+  body('location').optional({ nullable: true }).isString().isLength({ max: 500 }),
+  body('latitude').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
+  body('longitude').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
 
   validateResult,
 ];

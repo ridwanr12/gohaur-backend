@@ -77,7 +77,30 @@ async function getProfile(userId) {
 }
 
 async function updateProfile(userId, updateData) {
-  const user = await userRepository.update(userId, updateData);
+  const editable = {};
+  ['username', 'phone', 'location'].forEach(field => {
+    if (updateData[field] !== undefined) {
+      editable[field] = updateData[field];
+    }
+  });
+
+  if (updateData.latitude !== undefined && updateData.latitude !== null) {
+    const lat = Number(updateData.latitude);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) {
+      throw new AppError('Invalid latitude', 400);
+    }
+    editable.latitude = lat;
+  }
+
+  if (updateData.longitude !== undefined && updateData.longitude !== null) {
+    const lng = Number(updateData.longitude);
+    if (!Number.isFinite(lng) || Math.abs(lng) > 180) {
+      throw new AppError('Invalid longitude', 400);
+    }
+    editable.longitude = lng;
+  }
+
+  const user = await userRepository.update(userId, editable);
   if (!user) {
     throw new AppError('User not found', 404);
   }

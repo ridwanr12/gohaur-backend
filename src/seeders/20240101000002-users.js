@@ -48,16 +48,9 @@ export default {
         email: 'buyer@example.com',
         password: await bcrypt.hash('buyer123', 10),
         phone: '+6281234567892',
-        location: 'Surabaya, Indonesia',
-        created_at: new Date(),
-      },
-      {
-        id: uuidv4(),
-        username: 'courier1',
-        email: 'courier@example.com',
-        password: await bcrypt.hash('courier123', 10),
-        phone: '+6281234567893',
-        location: 'Medan, Indonesia',
+        location: 'Jl. Dipatiukur No. 20, Bandung',
+        latitude: -6.893,
+        longitude: 107.616,
         created_at: new Date(),
       },
     ];
@@ -88,12 +81,6 @@ export default {
         id: uuidv4(),
         user_id: users[3].id, // This is buyer1
         role_id: roleIdMap.buyer,
-        assigned_at: new Date(),
-      },
-      {
-        id: uuidv4(),
-        user_id: users[4].id, // This is courier1
-        role_id: roleIdMap.courier,
         assigned_at: new Date(),
       },
     ];

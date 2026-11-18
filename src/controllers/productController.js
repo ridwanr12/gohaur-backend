@@ -23,19 +23,19 @@ async function createProduct(req, res) {
     ...req.body,
     store_id: req.params.storeId,
   };
-  const product = await productService.createProduct(productData);
+  const product = await productService.createProduct(productData, req.user.id);
   res.status(201).json(ApiResponse.success({ product }, 'Product created successfully'));
 }
 
 async function updateProduct(req, res) {
   const { id } = req.params;
-  const product = await productService.updateProduct(id, req.body);
+  const product = await productService.updateProduct(id, req.body, req.user.id);
   res.json(ApiResponse.success({ product }, 'Product updated successfully'));
 }
 
 async function deleteProduct(req, res) {
   const { id } = req.params;
-  await productService.deleteProduct(id);
+  await productService.deleteProduct(id, req.user);
   res.json(ApiResponse.success(null, 'Product deleted successfully'));
 }
 

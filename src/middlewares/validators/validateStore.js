@@ -11,6 +11,10 @@ export const validateCreateStore = [
 
   body('description').optional().trim(),
 
+  body('address').optional().trim().isLength({ max: 500 }),
+  body('latitude').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
+  body('longitude').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
+
   validateResult,
 ];
 
@@ -22,6 +26,11 @@ export const validateUpdateStore = [
     .withMessage('Store name must be between 3 and 255 characters'),
 
   body('description').optional().trim(),
+
+  body('image').optional({ nullable: true }).isString(),
+  body('address').optional({ nullable: true }).trim().isLength({ max: 500 }),
+  body('latitude').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
+  body('longitude').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
 
   validateResult,
 ];

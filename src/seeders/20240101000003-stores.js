@@ -21,8 +21,14 @@ export default {
       name: storeNames[index] || `${seller.username}'s Store`,
       description:
         index === 0
-          ? 'Ayam geprek super pedas dengan resep rahasia'
-          : 'Kopi susu gula aren premium',
+          ? 'Ayam geprek super pedas dengan resep rahasia. Transfer ke BCA 1234567890 a/n Toko GoHaur'
+          : 'Kopi susu gula aren premium. Transfer ke BCA 0987654321 a/n Kopi Kenangan Senja',
+      address:
+        index === 0
+          ? 'Jl. Raya Pancuh No. 21, Bandung, Jawa Barat'
+          : 'Jl. Dipatiukur No. 20, Bandung, Jawa Barat',
+      latitude: index === 0 ? -6.895 : -6.9,
+      longitude: index === 0 ? 107.618 : 107.62,
       created_at: new Date(),
     }));
 

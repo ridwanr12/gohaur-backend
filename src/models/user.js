@@ -14,14 +14,6 @@ export default sequelize => {
         foreignKey: 'user_id',
         as: 'buyerOrders',
       });
-      User.hasMany(models.Order, {
-        foreignKey: 'courier_id',
-        as: 'courierOrders',
-      });
-      User.hasMany(models.Delivery, {
-        foreignKey: 'courier_id',
-        as: 'deliveries',
-      });
     }
   }
 
@@ -65,6 +57,12 @@ export default sequelize => {
       },
       location: {
         type: DataTypes.TEXT,
+      },
+      latitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
+      longitude: {
+        type: DataTypes.DECIMAL(10, 7),
       },
     },
     {

@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default {
   async up(queryInterface, Sequelize) {
-    const roles = ['buyer', 'seller', 'courier', 'admin'].map(role => ({
+    const roles = ['buyer', 'seller', 'admin'].map(role => ({
       id: uuidv4(),
       name: role,
     }));
