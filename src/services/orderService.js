@@ -9,6 +9,7 @@ import {
   MAX_DELIVERY_DISTANCE_KM,
   PACKAGING_FEE,
   getShippingCost,
+  roundDistanceKm,
 } from '../utils/geo.js';
 
 /**
@@ -60,17 +61,18 @@ async function createOrder(orderData, userId) {
   }
 
   const distanceKm = haversineDistanceKm(store.latitude, store.longitude, deliveryLat, deliveryLng);
+  const roundedDistanceKm = roundDistanceKm(distanceKm);
 
-  if (distanceKm >= MAX_DELIVERY_DISTANCE_KM) {
+  if (roundedDistanceKm >= MAX_DELIVERY_DISTANCE_KM) {
     throw new AppError(
-      `Delivery distance is too far (${distanceKm.toFixed(
+      `Delivery distance is too far (${roundedDistanceKm.toFixed(
         2,
       )} km, max ${MAX_DELIVERY_DISTANCE_KM} km)`,
       400,
     );
   }
 
-  const shippingCost = getShippingCost(distanceKm);
+  const shippingCost = getShippingCost(roundedDistanceKm);
   if (shippingCost == null) {
     throw new AppError('Delivery distance is out of range', 400);
   }
@@ -96,7 +98,7 @@ async function createOrder(orderData, userId) {
         delivery_address: orderData.delivery_address.trim(),
         delivery_latitude: deliveryLat,
         delivery_longitude: deliveryLng,
-        distance_km: Number(distanceKm.toFixed(2)),
+        distance_km: roundedDistanceKm,
         status: 'pending',
       },
       t,

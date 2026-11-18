@@ -36,4 +36,11 @@ describe('getShippingCost', () => {
     expect(getShippingCost(MAX_DELIVERY_DISTANCE_KM)).toBeNull();
     expect(getShippingCost(5.1)).toBeNull();
   });
+
+  it('membulatkan jarak 2 desimal sebelum memilih tier', () => {
+    expect(getShippingCost(0.994)).toBe(8000);
+    expect(getShippingCost(1.004)).toBe(10000);
+    expect(getShippingCost(3.996)).toBe(18000);
+    expect(getShippingCost(4.999)).toBeNull();
+  });
 });

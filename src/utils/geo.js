@@ -40,11 +40,17 @@ export const SHIPPING_TIERS = [
   { maxKm: 5, cost: 18000 },
 ];
 
+/** Bulatkan jarak ke 2 desimal supaya batas tier konsisten dengan yang ditampilkan. */
+export function roundDistanceKm(value) {
+  return Math.round(Number(value) * 100) / 100;
+}
+
 /**
  * @param {number} distanceKm
  * @returns {number|null} ongkir, atau null kalau di luar jangkauan
  */
 export function getShippingCost(distanceKm) {
-  const tier = SHIPPING_TIERS.find(item => distanceKm < item.maxKm);
+  const km = roundDistanceKm(distanceKm);
+  const tier = SHIPPING_TIERS.find(item => km < item.maxKm);
   return tier ? tier.cost : null;
 }
