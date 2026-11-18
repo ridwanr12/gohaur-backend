@@ -85,6 +85,20 @@ src/utils/                 # ApiResponse, AppError, jwt, logger, swagger
 | PUT | `/api/orders/:id/reject` | seller |
 | PUT | `/api/orders/:id/ship` | seller (nama pengirim + plat) |
 | PUT | `/api/orders/:id/complete` | buyer |
+| PUT | `/api/orders/:id/refund` | seller (tandai refund manual) |
+| GET | `/api/notifications` | list notifikasi user |
+| GET | `/api/notifications/unread-count` | jumlah belum dibaca |
+| PATCH | `/api/notifications/:id/read` | tandai satu dibaca |
+| PATCH | `/api/notifications/read-all` | tandai semua dibaca |
+
+## Alur Pembatalan dan Refund
+
+- Penolakan/pembatalan hanya dari `pending` atau `accepted`. Alasan wajib.
+- Batal dari `accepted` mengembalikan stok.
+- Order yang punya `payment_proof` dan ditolak -> `refund_status = pending`.
+- Seller menandai refund manual lewat `/refund`; app tidak memindahkan uang.
+- Nomor HP dan rekening refund buyer hanya dikirim pada detail order yang
+  boleh dilihat seller pemilik order.
 
 ## Endpoint Upload
 

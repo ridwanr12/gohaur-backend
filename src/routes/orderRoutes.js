@@ -8,6 +8,7 @@ import {
   rejectOrder,
   shipOrder,
   completeOrder,
+  markRefunded,
 } from '../controllers/orderController.js';
 import {
   validateCreateOrder,
@@ -85,6 +86,9 @@ router.get('/my-orders', checkRole(['buyer']), getMyOrders);
 // Buyer menyatakan pesanan sudah diterima
 router.put('/:id/complete', checkRole(['buyer']), completeOrder);
 
+// Seller menandai refund manual sudah dikirim
+router.put('/:id/refund', checkRole(['seller']), markRefunded);
+
 // ==========================================
 // Seller
 // ==========================================
@@ -93,6 +97,9 @@ router.get('/store/:storeId', checkRole(['seller']), getStoreOrders);
 router.put('/:id/accept', checkRole(['seller']), acceptOrder);
 router.put('/:id/reject', checkRole(['seller']), validateRejectOrder, rejectOrder);
 router.put('/:id/ship', checkRole(['seller']), validateShipOrder, shipOrder);
+
+// Seller menandai refund manual sudah dikirim
+router.put('/:id/refund', checkRole(['seller']), markRefunded);
 
 // ==========================================
 // Shared

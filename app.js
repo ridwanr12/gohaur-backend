@@ -16,6 +16,7 @@ import productRoutes from './src/routes/productRoutes.js';
 import orderRoutes from './src/routes/orderRoutes.js';
 import feedbackRoutes from './src/routes/feedbackRoutes.js';
 import uploadRoutes from './src/routes/uploadRoutes.js';
+import notificationRoutes from './src/routes/notificationRoutes.js';
 
 dotenv.config(); // Memuat variabel dari .env
 
@@ -58,6 +59,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ==========================================
 // Error Handling
@@ -70,3 +72,5 @@ app.use(errorHandler);
 const server = app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+export default server;

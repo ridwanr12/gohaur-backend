@@ -44,7 +44,9 @@ export const validateCreateOrder = [
 
 export const validateRejectOrder = [
   body('rejection_reason')
-    .optional({ nullable: true })
+    .trim()
+    .notEmpty()
+    .withMessage('Rejection reason is required')
     .isString()
     .withMessage('Rejection reason must be a string')
     .isLength({ max: 500 })

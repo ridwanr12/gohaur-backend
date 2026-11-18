@@ -16,6 +16,11 @@ const storeRepository = {
 const productRepository = {
   findById: jest.fn(),
   decrementStock: jest.fn(),
+  incrementStock: jest.fn(),
+};
+
+const notificationService = {
+  notify: jest.fn(),
 };
 
 const commit = jest.fn();
@@ -25,6 +30,7 @@ const transaction = jest.fn();
 jest.unstable_mockModule('../../repository/orderRepository.js', () => orderRepository);
 jest.unstable_mockModule('../../repository/storeRepository.js', () => storeRepository);
 jest.unstable_mockModule('../../repository/productRepository.js', () => productRepository);
+jest.unstable_mockModule('../../services/notificationService.js', () => notificationService);
 jest.unstable_mockModule('../../models/index.js', () => ({
   default: {},
   sequelize: { transaction },
@@ -37,6 +43,7 @@ const {
   rejectOrder,
   shipOrder,
   completeOrder,
+  markRefunded,
   createOrder,
 } = await import('../../services/orderService.js');
 
@@ -46,6 +53,8 @@ function fakeOrder(overrides = {}) {
     user_id: 'buyer-1',
     store_id: 'store-1',
     status: 'pending',
+    payment_proof: '/uploads/bukti.jpg',
+    refund_status: 'not_required',
     Store: { user_id: 'seller-1', latitude: -6.895, longitude: 107.618 },
     Products: [
       {
@@ -53,7 +62,7 @@ function fakeOrder(overrides = {}) {
         name: 'Kopi',
         stock: 10,
         price: '10000',
-        order_products: { quantity: 2 },
+        OrderProduct: { quantity: 2 },
       },
     ],
     ...overrides,
@@ -64,6 +73,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   transaction.mockResolvedValue({ commit, rollback });
   productRepository.decrementStock.mockResolvedValue(true);
+  productRepository.incrementStock.mockResolvedValue(true);
+  storeRepository.findById.mockResolvedValue({ id: 'store-1', user_id: 'seller-1' });
 });
 
 describe('orderService.getStoreOrders', () => {
@@ -144,21 +155,55 @@ describe('orderService.acceptOrder', () => {
 });
 
 describe('orderService.rejectOrder', () => {
-  it('menolak pesanan dengan alasan', async () => {
+  it('mewajibkan alasan penolakan', async () => {
+    orderRepository.findById.mockResolvedValue(fakeOrder());
+    await expect(rejectOrder('order-1', 'seller-1', '   ')).rejects.toMatchObject({
+      statusCode: 400,
+      message: 'Rejection reason is required',
+    });
+  });
+
+  it('menolak pesanan pending tanpa mengubah stok dan menandai refund', async () => {
     orderRepository.findById.mockResolvedValue(fakeOrder());
     orderRepository.update.mockResolvedValue(true);
 
     await rejectOrder('order-1', 'seller-1', 'Stok habis');
 
+    expect(productRepository.incrementStock).not.toHaveBeenCalled();
     expect(orderRepository.update).toHaveBeenCalledWith(
       'order-1',
-      expect.objectContaining({ status: 'rejected', rejection_reason: 'Stok habis' }),
+      expect.objectContaining({
+        status: 'rejected',
+        rejection_reason: 'Stok habis',
+        refund_status: 'pending',
+      }),
+      expect.anything(),
     );
   });
 
-  it('tidak bisa menolak pesanan yang sudah diproses', async () => {
+  it('membatalkan pesanan accepted dan mengembalikan stok', async () => {
     orderRepository.findById.mockResolvedValue(fakeOrder({ status: 'accepted' }));
-    await expect(rejectOrder('order-1', 'seller-1')).rejects.toMatchObject({ statusCode: 400 });
+    orderRepository.update.mockResolvedValue(true);
+
+    await rejectOrder('order-1', 'seller-1', 'Salah pencet');
+
+    expect(productRepository.incrementStock).toHaveBeenCalledWith(
+      'product-1',
+      2,
+      expect.anything(),
+    );
+    expect(orderRepository.update).toHaveBeenCalledWith(
+      'order-1',
+      expect.objectContaining({ status: 'rejected', refund_status: 'pending' }),
+      expect.anything(),
+    );
+  });
+
+  it('tidak bisa membatalkan pesanan yang sudah dikirim', async () => {
+    orderRepository.findById.mockResolvedValue(fakeOrder({ status: 'shipped' }));
+    await expect(rejectOrder('order-1', 'seller-1', 'Batal')).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 });
 
@@ -222,6 +267,38 @@ describe('orderService.completeOrder', () => {
       'order-1',
       expect.objectContaining({ status: 'completed' }),
     );
+  });
+});
+
+describe('orderService.markRefunded', () => {
+  it('menandai refund hanya untuk order rejected yang butuh refund', async () => {
+    orderRepository.findById.mockResolvedValue(
+      fakeOrder({ status: 'rejected', refund_status: 'pending' }),
+    );
+    orderRepository.update.mockResolvedValue(true);
+
+    await markRefunded('order-1', 'seller-1', 'Transfer BCA');
+
+    expect(orderRepository.update).toHaveBeenCalledWith(
+      'order-1',
+      expect.objectContaining({ refund_status: 'refunded', refund_note: 'Transfer BCA' }),
+    );
+  });
+
+  it('menolak kalau order belum ditolak', async () => {
+    orderRepository.findById.mockResolvedValue(fakeOrder({ status: 'accepted' }));
+    await expect(markRefunded('order-1', 'seller-1', 'x')).rejects.toMatchObject({
+      statusCode: 400,
+    });
+  });
+
+  it('menolak kalau tidak ada refund yang perlu dikirim', async () => {
+    orderRepository.findById.mockResolvedValue(
+      fakeOrder({ status: 'rejected', refund_status: 'not_required' }),
+    );
+    await expect(markRefunded('order-1', 'seller-1', 'x')).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 });
 

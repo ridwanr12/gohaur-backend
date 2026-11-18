@@ -66,6 +66,9 @@ export const validateUpdateProfile = [
   body('location').optional({ nullable: true }).isString().isLength({ max: 500 }),
   body('latitude').optional({ nullable: true }).isFloat({ min: -90, max: 90 }),
   body('longitude').optional({ nullable: true }).isFloat({ min: -180, max: 180 }),
+  body('bank_name').optional({ nullable: true }).isString().isLength({ max: 100 }),
+  body('bank_account_number').optional({ nullable: true }).isString().isLength({ max: 50 }),
+  body('bank_account_holder').optional({ nullable: true }).isString().isLength({ max: 150 }),
 
   validateResult,
 ];

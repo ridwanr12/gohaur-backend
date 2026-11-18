@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { haversineDistanceKm, getShippingCost, MAX_DELIVERY_DISTANCE_KM } from '../../utils/geo.js';
 
 describe('haversineDistanceKm', () => {

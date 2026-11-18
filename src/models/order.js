@@ -14,6 +14,7 @@ export default sequelize => {
         otherKey: 'product_id',
         timestamps: false,
       });
+      Order.hasMany(models.Notification, { foreignKey: 'order_id' });
     }
   }
 
@@ -92,6 +93,17 @@ export default sequelize => {
       },
       rejected_at: {
         type: DataTypes.DATE,
+      },
+      refund_status: {
+        type: DataTypes.ENUM('not_required', 'pending', 'refunded'),
+        allowNull: false,
+        defaultValue: 'not_required',
+      },
+      refunded_at: {
+        type: DataTypes.DATE,
+      },
+      refund_note: {
+        type: DataTypes.TEXT,
       },
       shipping_cost: {
         type: DataTypes.DECIMAL(10, 2),

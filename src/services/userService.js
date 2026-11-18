@@ -78,7 +78,14 @@ async function getProfile(userId) {
 
 async function updateProfile(userId, updateData) {
   const editable = {};
-  ['username', 'phone', 'location'].forEach(field => {
+  [
+    'username',
+    'phone',
+    'location',
+    'bank_name',
+    'bank_account_number',
+    'bank_account_holder',
+  ].forEach(field => {
     if (updateData[field] !== undefined) {
       editable[field] = updateData[field];
     }

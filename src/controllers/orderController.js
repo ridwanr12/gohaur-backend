@@ -68,6 +68,11 @@ async function completeOrder(req, res) {
   res.json(ApiResponse.success({ order }, 'Order completed'));
 }
 
+async function markRefunded(req, res) {
+  const order = await orderService.markRefunded(req.params.id, req.user.id, req.body.refund_note);
+  res.json(ApiResponse.success({ order }, 'Refund marked as sent'));
+}
+
 export {
   createOrder,
   getOrder,
@@ -77,4 +82,5 @@ export {
   rejectOrder,
   shipOrder,
   completeOrder,
+  markRefunded,
 };

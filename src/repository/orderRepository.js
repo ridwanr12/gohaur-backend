@@ -5,14 +5,23 @@ const ORDER_INCLUDES = [
   {
     model: User,
     as: 'buyer',
-    attributes: ['id', 'username', 'email'],
+    attributes: [
+      'id',
+      'username',
+      'email',
+      'phone',
+      'location',
+      'bank_name',
+      'bank_account_number',
+      'bank_account_holder',
+    ],
   },
   {
     model: Store,
     include: [
       {
         model: User,
-        attributes: ['id', 'username', 'email'],
+        attributes: ['id', 'username', 'email', 'phone'],
       },
     ],
   },

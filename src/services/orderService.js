@@ -1,6 +1,7 @@
 import * as orderRepository from '../repository/orderRepository.js';
 import * as productRepository from '../repository/productRepository.js';
 import * as storeRepository from '../repository/storeRepository.js';
+import * as notificationService from '../services/notificationService.js';
 import AppError from '../utils/AppError.js';
 import { sequelize } from '../models/index.js';
 import {
@@ -113,7 +114,19 @@ async function createOrder(orderData, userId) {
     );
 
     await t.commit();
-    return await orderRepository.findById(order.id);
+    const createdOrder = await orderRepository.findById(order.id);
+
+    await notificationService.notify({
+      userId: store.user_id,
+      orderId: createdOrder.id,
+      type: 'order_created',
+      title: 'Pesanan Baru',
+      message: `Pesanan baru dari ${createdOrder.buyer?.username || 'buyer'} sebesar Rp ${Number(
+        totalPrice,
+      ).toLocaleString('id-ID')}.`,
+    });
+
+    return createdOrder;
   } catch (error) {
     await t.rollback();
     throw error;
@@ -167,6 +180,10 @@ async function getStoreOrders(storeId, userId, options) {
   return await orderRepository.findByStoreId(storeId, options);
 }
 
+function orderedQuantity(product) {
+  return product.OrderProduct?.quantity ?? product.order_products?.quantity ?? 0;
+}
+
 function assertStoreOwner(order, userId) {
   if (!order.Store || order.Store.user_id !== userId) {
     throw new AppError('You are not allowed to update this order', 403);
@@ -189,7 +206,7 @@ async function acceptOrder(id, userId) {
 
   const orderProducts = order.Products || [];
   orderProducts.forEach(product => {
-    const quantity = product.order_products?.quantity ?? 0;
+    const quantity = orderedQuantity(product);
     if (product.stock < quantity) {
       throw new AppError(`Product "${product.name}" does not have enough stock`, 400);
     }
@@ -199,21 +216,33 @@ async function acceptOrder(id, userId) {
   try {
     await Promise.all(
       orderProducts.map(product =>
-        productRepository.decrementStock(product.id, product.order_products?.quantity ?? 0, t),
+        productRepository.decrementStock(product.id, orderedQuantity(product), t),
       ),
     );
 
     await orderRepository.update(id, { status: 'accepted', accepted_at: new Date() }, t);
     await t.commit();
-    return await orderRepository.findById(id);
   } catch (error) {
     await t.rollback();
     throw error;
   }
+
+  const updatedOrder = await orderRepository.findById(id);
+
+  await notificationService.notify({
+    userId: updatedOrder.user_id,
+    orderId: updatedOrder.id,
+    type: 'order_accepted',
+    title: 'Pesanan Diterima',
+    message: 'Penjual menerima pesananmu. Pesanan sedang disiapkan.',
+  });
+
+  return updatedOrder;
 }
 
 /**
- * Seller menolak pesanan. Alasan opsional.
+ * Seller menolak pesanan (pending) atau membatalkan (accepted).
+ * Alasan wajib. Kalau dibatalkan setelah accepted, stok dikembalikan.
  */
 async function rejectOrder(id, userId, reason) {
   const order = await orderRepository.findById(id);
@@ -222,17 +251,56 @@ async function rejectOrder(id, userId, reason) {
   }
   assertStoreOwner(order, userId);
 
-  if (order.status !== 'pending') {
-    throw new AppError(`Only pending orders can be rejected (current: ${order.status})`, 400);
+  if (!['pending', 'accepted'].includes(order.status)) {
+    throw new AppError(
+      `Only pending or accepted orders can be rejected (current: ${order.status})`,
+      400,
+    );
   }
 
-  await orderRepository.update(id, {
-    status: 'rejected',
-    rejected_at: new Date(),
-    rejection_reason: reason ? String(reason).trim() : null,
+  const rejectionReason = reason ? String(reason).trim() : '';
+  if (!rejectionReason) {
+    throw new AppError('Rejection reason is required', 400);
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    if (order.status === 'accepted') {
+      await Promise.all(
+        (order.Products || []).map(product =>
+          productRepository.incrementStock(product.id, orderedQuantity(product), t),
+        ),
+      );
+    }
+
+    await orderRepository.update(
+      id,
+      {
+        status: 'rejected',
+        rejected_at: new Date(),
+        rejection_reason: rejectionReason,
+        refund_status: order.payment_proof ? 'pending' : 'not_required',
+      },
+      t,
+    );
+
+    await t.commit();
+  } catch (error) {
+    await t.rollback();
+    throw error;
+  }
+
+  const updatedOrder = await orderRepository.findById(id);
+
+  await notificationService.notify({
+    userId: updatedOrder.user_id,
+    orderId: updatedOrder.id,
+    type: 'order_rejected',
+    title: 'Pesanan Ditolak',
+    message: `Pesanan ditolak. Alasan: ${rejectionReason}`,
   });
 
-  return await orderRepository.findById(id);
+  return updatedOrder;
 }
 
 /**
@@ -267,7 +335,17 @@ async function shipOrder(id, userId, { courier_name, courier_plate }) {
     courier_plate: courierPlate,
   });
 
-  return await orderRepository.findById(id);
+  const updatedOrder = await orderRepository.findById(id);
+
+  await notificationService.notify({
+    userId: updatedOrder.user_id,
+    orderId: updatedOrder.id,
+    type: 'order_shipped',
+    title: 'Pesanan Dikirim',
+    message: `Pesanan dikirim oleh ${courierName} (${courierPlate}).`,
+  });
+
+  return updatedOrder;
 }
 
 /**
@@ -290,7 +368,60 @@ async function completeOrder(id, userId) {
     completed_at: new Date(),
   });
 
-  return await orderRepository.findById(id);
+  const updatedOrder = await orderRepository.findById(id);
+
+  if (order.Store?.user_id) {
+    await notificationService.notify({
+      userId: order.Store.user_id,
+      orderId: updatedOrder.id,
+      type: 'order_completed',
+      title: 'Pesanan Selesai',
+      message: 'Buyer mengonfirmasi bahwa pesanan sudah diterima.',
+    });
+  }
+
+  return updatedOrder;
+}
+
+/**
+ * Seller menandai refund manual sudah dikirim. App tidak memindahkan uang;
+ * ini hanya pencatatan supaya buyer tahu statusnya.
+ */
+async function markRefunded(id, userId, note) {
+  const order = await orderRepository.findById(id);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+  assertStoreOwner(order, userId);
+
+  if (order.status !== 'rejected') {
+    throw new AppError('Only rejected orders can be refunded', 400);
+  }
+  if (order.refund_status !== 'pending') {
+    throw new AppError('This order does not need a refund', 400);
+  }
+
+  const refundNote = note ? String(note).trim() : null;
+
+  await orderRepository.update(id, {
+    refund_status: 'refunded',
+    refunded_at: new Date(),
+    refund_note: refundNote,
+  });
+
+  const updatedOrder = await orderRepository.findById(id);
+
+  await notificationService.notify({
+    userId: updatedOrder.user_id,
+    orderId: updatedOrder.id,
+    type: 'refund_sent',
+    title: 'Refund Dikirim',
+    message: refundNote
+      ? `Penjual sudah mengirim refund. Catatan: ${refundNote}`
+      : 'Penjual sudah mengirim refund untuk pesanan ini.',
+  });
+
+  return updatedOrder;
 }
 
 export {
@@ -302,4 +433,5 @@ export {
   rejectOrder,
   shipOrder,
   completeOrder,
+  markRefunded,
 };
