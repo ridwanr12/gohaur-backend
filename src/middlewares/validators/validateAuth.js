@@ -69,6 +69,7 @@ export const validateUpdateProfile = [
   body('bank_name').optional({ nullable: true }).isString().isLength({ max: 100 }),
   body('bank_account_number').optional({ nullable: true }).isString().isLength({ max: 50 }),
   body('bank_account_holder').optional({ nullable: true }).isString().isLength({ max: 150 }),
+  body('bank_account').optional({ nullable: true }).isString().isLength({ max: 120 }),
 
   validateResult,
 ];

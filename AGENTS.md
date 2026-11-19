@@ -61,6 +61,10 @@ src/utils/                 # ApiResponse, AppError, jwt, logger, swagger
     File disimpan di `uploads/` dan disajikan di `/uploads/<nama>`.
 12. Role courier sudah dihapus. Tabel `Deliveries` dan kolom `Orders.courier_id`
     masih ada untuk riwayat, tapi jangan dipakai di kode baru.
+13. Rekening: `Stores.bank_account` + `bank_account_holder` untuk toko,
+    `Users.bank_account` + `bank_account_holder` untuk refund buyer.
+    `bank_account` berisi gabungan bank dan nomor, misal "BCA 129519240".
+    Kolom lama `bank_name`/`bank_account_number` dipertahankan tapi tidak dipakai kode baru.
 
 ## Catatan Teknis
 

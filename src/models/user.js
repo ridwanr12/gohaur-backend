@@ -73,6 +73,9 @@ export default sequelize => {
       bank_account_holder: {
         type: DataTypes.STRING(150),
       },
+      bank_account: {
+        type: DataTypes.STRING(120),
+      },
     },
     {
       sequelize,

@@ -48,6 +48,12 @@ export default sequelize => {
       longitude: {
         type: DataTypes.DECIMAL(10, 7),
       },
+      bank_account: {
+        type: DataTypes.STRING(120),
+      },
+      bank_account_holder: {
+        type: DataTypes.STRING(150),
+      },
     },
     {
       sequelize,

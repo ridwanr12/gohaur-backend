@@ -24,7 +24,16 @@ async function createStore(storeData) {
   }
   return await storeRepository.create(storeData);
 }
-const STORE_EDITABLE_FIELDS = ['name', 'description', 'image', 'address', 'latitude', 'longitude'];
+const STORE_EDITABLE_FIELDS = [
+  'name',
+  'description',
+  'image',
+  'address',
+  'latitude',
+  'longitude',
+  'bank_account',
+  'bank_account_holder',
+];
 
 function pickEditableFields(updateData) {
   const picked = {};
