@@ -9,6 +9,10 @@ async function findById(id) {
         model: User,
         attributes: ['id', 'username', 'email'],
       },
+      {
+        model: Rating,
+        attributes: ['id', 'store_id', 'average_rating', 'amount', 'created_at'],
+      },
     ],
   });
 }
@@ -24,6 +28,10 @@ async function findByUserId(userId) {
       {
         model: Product,
         attributes: ['id', 'name', 'description', 'price', 'stock', 'images'],
+      },
+      {
+        model: Rating,
+        attributes: ['id', 'store_id', 'average_rating', 'amount', 'created_at'],
       },
     ],
   });
