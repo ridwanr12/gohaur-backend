@@ -95,4 +95,20 @@ async function getAllStores({
   return await storeRepository.findAll({ page, limit, search, showProducts, showRating });
 }
 
-export { getStoreById, getStoreByUserId, createStore, updateStore, deleteStore, getAllStores };
+async function getStoreStats(storeId) {
+  const store = await storeRepository.findById(storeId);
+  if (!store) {
+    throw new AppError('Store not found', 404);
+  }
+  return await storeRepository.getStats(storeId);
+}
+
+export {
+  getStoreById,
+  getStoreByUserId,
+  createStore,
+  updateStore,
+  deleteStore,
+  getAllStores,
+  getStoreStats,
+};

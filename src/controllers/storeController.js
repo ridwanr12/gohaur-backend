@@ -45,4 +45,9 @@ async function getAllStores(req, res) {
   res.json(ApiResponse.success(stores));
 }
 
-export { getStore, getMyStore, createStore, updateStore, deleteStore, getAllStores };
+async function getStoreStats(req, res) {
+  const stats = await storeService.getStoreStats(req.params.id);
+  res.json(ApiResponse.success({ stats }));
+}
+
+export { getStore, getMyStore, createStore, updateStore, deleteStore, getAllStores, getStoreStats };

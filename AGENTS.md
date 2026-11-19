@@ -94,6 +94,7 @@ src/utils/                 # ApiResponse, AppError, jwt, logger, swagger
 | GET | `/api/notifications/unread-count` | jumlah belum dibaca |
 | PATCH | `/api/notifications/:id/read` | tandai satu dibaca |
 | PATCH | `/api/notifications/read-all` | tandai semua dibaca |
+| GET | `/api/stores/:id/stats` | pesanan selesai, pembeli unik, jumlah ulasan, rating |
 
 ## Alur Pembatalan dan Refund
 
@@ -103,6 +104,10 @@ src/utils/                 # ApiResponse, AppError, jwt, logger, swagger
 - Seller menandai refund manual lewat `/refund`; app tidak memindahkan uang.
 - Nomor HP dan rekening refund buyer hanya dikirim pada detail order yang
   boleh dilihat seller pemilik order.
+- Review hanya untuk order `completed`, tidak wajib, dan tidak bisa diedit
+  setelah dikirim (`PUT /api/feedback/:id` membalas 403).
+- Statistik toko dihitung dari order `completed` (jumlah order dan pembeli unik)
+  serta tabel Feedback (jumlah ulasan dan rata-rata rating).
 
 ## Endpoint Upload
 
