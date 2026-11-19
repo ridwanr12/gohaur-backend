@@ -24,7 +24,16 @@ async function createStore(storeData) {
   }
   return await storeRepository.create(storeData);
 }
-const STORE_EDITABLE_FIELDS = ['name', 'description', 'image', 'address', 'latitude', 'longitude'];
+const STORE_EDITABLE_FIELDS = [
+  'name',
+  'description',
+  'image',
+  'address',
+  'latitude',
+  'longitude',
+  'bank_account',
+  'bank_account_holder',
+];
 
 function pickEditableFields(updateData) {
   const picked = {};
@@ -86,4 +95,20 @@ async function getAllStores({
   return await storeRepository.findAll({ page, limit, search, showProducts, showRating });
 }
 
-export { getStoreById, getStoreByUserId, createStore, updateStore, deleteStore, getAllStores };
+async function getStoreStats(storeId) {
+  const store = await storeRepository.findById(storeId);
+  if (!store) {
+    throw new AppError('Store not found', 404);
+  }
+  return await storeRepository.getStats(storeId);
+}
+
+export {
+  getStoreById,
+  getStoreByUserId,
+  createStore,
+  updateStore,
+  deleteStore,
+  getAllStores,
+  getStoreStats,
+};

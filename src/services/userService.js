@@ -82,6 +82,7 @@ async function updateProfile(userId, updateData) {
     'username',
     'phone',
     'location',
+    'bank_account',
     'bank_name',
     'bank_account_number',
     'bank_account_holder',

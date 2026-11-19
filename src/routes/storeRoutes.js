@@ -6,6 +6,7 @@ import {
   updateStore,
   deleteStore,
   getAllStores,
+  getStoreStats,
 } from '../controllers/storeController.js';
 import {
   validateCreateStore,
@@ -79,6 +80,7 @@ router.get('/', getAllStores);
  *       404:
  *         description: Store not found
  */
+router.get('/:id/stats', getStoreStats);
 router.get('/:id', getStore);
 
 // Protected routes (requires authentication)

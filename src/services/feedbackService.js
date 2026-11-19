@@ -58,32 +58,9 @@ async function getOrderFeedback(orderId) {
   return feedback;
 }
 
-async function updateFeedback(id, updateData, userId) {
-  const feedback = await feedbackRepository.findById(id);
-  if (!feedback) {
-    throw new AppError('Feedback not found', 404);
-  }
-
-  // Check if feedback belongs to the user
-  if (feedback.user_id !== userId) {
-    throw new AppError('You can only update your own feedback', 403);
-  }
-
-  // Store old rating for recalculation
-  const oldRating = feedback.rating;
-
-  // Update feedback
-  const updatedFeedback = await feedbackRepository.update(id, updateData);
-
-  // If rating changed, update store rating
-  if (oldRating !== updateData.rating) {
-    // Remove old rating
-    await ratingRepository.recalculateOnDelete(feedback.store_id, oldRating);
-    // Add new rating
-    await ratingRepository.createOrUpdate(feedback.store_id, updateData.rating);
-  }
-
-  return updatedFeedback;
+async function updateFeedback(_id, _updateData, _userId) {
+  // Review tidak boleh diedit setelah dikirim.
+  throw new AppError('Review cannot be edited after it is submitted', 403);
 }
 
 async function deleteFeedback(id, userId) {

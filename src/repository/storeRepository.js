@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import models from '../models/index.js';
-const { Store, User, Product, Rating } = models;
+const { Store, User, Product, Rating, Order, Feedback } = models;
 
 async function findById(id) {
   return await Store.findByPk(id, {
@@ -99,4 +99,22 @@ async function findAll({
   };
 }
 
-export { findById, findByUserId, create, update, remove, findAll };
+async function getStats(storeId) {
+  const completedWhere = { store_id: storeId, status: 'completed' };
+
+  const [completedOrders, uniqueBuyers, reviewCount, averageRating] = await Promise.all([
+    Order.count({ where: completedWhere }),
+    Order.count({ where: completedWhere, distinct: true, col: 'user_id' }),
+    Feedback.count({ where: { store_id: storeId } }),
+    Feedback.aggregate('rating', 'AVG', { where: { store_id: storeId } }),
+  ]);
+
+  return {
+    completed_orders: completedOrders,
+    unique_buyers: uniqueBuyers,
+    review_count: reviewCount,
+    average_rating: averageRating ? Number(Number(averageRating).toFixed(2)) : 0,
+  };
+}
+
+export { findById, findByUserId, create, update, remove, findAll, getStats };
