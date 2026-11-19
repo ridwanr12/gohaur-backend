@@ -1,13 +1,16 @@
 import express from 'express';
-import { 
+import {
   getStore,
   getMyStore,
   createStore,
   updateStore,
   deleteStore,
-  getAllStores
+  getAllStores,
 } from '../controllers/storeController.js';
-import { validateCreateStore, validateUpdateStore } from '../middlewares/validators/validateStore.js';
+import {
+  validateCreateStore,
+  validateUpdateStore,
+} from '../middlewares/validators/validateStore.js';
 import authMiddleware from '../middlewares/auth.js';
 import checkRole from '../middlewares/checkRole.js';
 
@@ -128,10 +131,11 @@ router.get('/my/store', checkRole(['seller']), getMyStore);
  *       400:
  *         description: Invalid input
  */
-router.post('/', 
-//   checkRole(['seller', 'admin']), 
-  validateCreateStore, 
-  createStore
+router.post(
+  '/',
+  //   checkRole(['seller', 'admin']),
+  validateCreateStore,
+  createStore,
 );
 
 /**
@@ -167,11 +171,7 @@ router.post('/',
  *       404:
  *         description: Store not found
  */
-router.put('/:id', 
-  checkRole(['seller']), 
-  validateUpdateStore, 
-  updateStore
-);
+router.put('/:id', checkRole(['seller']), validateUpdateStore, updateStore);
 
 /**
  * @swagger
@@ -194,9 +194,6 @@ router.put('/:id',
  *       404:
  *         description: Store not found
  */
-router.delete('/:id', 
-  checkRole(['seller', 'admin']), 
-  deleteStore
-);
+router.delete('/:id', checkRole(['seller', 'admin']), deleteStore);
 
 export default router;

@@ -1,127 +1,170 @@
 import { jest } from '@jest/globals';
-import { getAllUsers } from '../../services/userService.js';
 
-const mockUserRepository = {
-  findAll: jest.fn(),
-  findById: jest.fn(),
-  findByEmail: jest.fn(),
-  findByEmailOrUsername: jest.fn(),
-  create: jest.fn(),
-  update: jest.fn(),
-  remove: jest.fn(),
-  assignRole: jest.fn(),
-  updateRoles: jest.fn()
-};
+const findAll = jest.fn();
+const findById = jest.fn();
+const findByEmail = jest.fn();
+const findByEmailOrUsername = jest.fn();
+const create = jest.fn();
+const update = jest.fn();
+const remove = jest.fn();
+const assignRole = jest.fn();
+const updateRoles = jest.fn();
 
-// Gunakan jest.mock langsung agar module digantikan dengan mockUserRepository
-jest.mock('../../repository/userRepository.js', () => ({
-  __esModule: true,
-  default: mockUserRepository,
+// ESM: mock harus didaftarkan sebelum module yang memakainya di-import.
+jest.unstable_mockModule('../../repository/userRepository.js', () => ({
+  findAll,
+  findById,
+  findByEmail,
+  findByEmailOrUsername,
+  create,
+  update,
+  remove,
+  assignRole,
+  updateRoles,
 }));
 
-import * as userRepository from '../../repository/userRepository.js';
+const mockUserRepository = {
+  findAll,
+  findById,
+  findByEmail,
+  findByEmailOrUsername,
+  create,
+  update,
+  remove,
+  assignRole,
+  updateRoles,
+};
 
-describe('getAllUsers', () => {
+const { getAllUsers, getProfile, updateProfile, register } = await import(
+  '../../services/userService.js'
+);
+
+/**
+ * Repository mengembalikan instance Sequelize (punya toJSON), jadi mock harus
+ * meniru bentuk itu. Tanpa toJSON, sanitizeUser akan gagal.
+ */
+function fakeUser(data) {
+  return { ...data, toJSON: () => ({ ...data }) };
+}
+
+describe('userService.getAllUsers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('should return users and pagination with default parameters', async () => {
-    const mockUsers = [
-      { id: '1', username: 'user1', email: 'user1@test.com', Roles: [{ name: 'buyer' }] },
-      { id: '2', username: 'user2', email: 'user2@test.com', Roles: [{ name: 'seller' }] }
-    ];
-
-    const mockResult = {
-      users: mockUsers,
-      pagination: {
-        total: 2,
-        page: 1,
-        totalPages: 1,
-        limit: 10
-      }
-    };
-
-    mockUserRepository.findAll.mockResolvedValue(mockResult);
-
-    const result = await getAllUsers({});
-
-    expect(mockUserRepository.findAll).toHaveBeenCalledTimes(1); // Pastikan fungsi dipanggil
-    expect(mockUserRepository.findAll).toHaveBeenCalledWith({}); // Pastikan parameternya benar
-    expect(result).toEqual({
-      users: mockUsers.map(user => ({
-        ...user,
-        roles: user.Roles.map(role => role.name),
-        Roles: undefined
-      })),
-      pagination: mockResult.pagination
+  it('mengembalikan user tanpa password beserta pagination', async () => {
+    mockUserRepository.findAll.mockResolvedValue({
+      users: [
+        fakeUser({
+          id: '1',
+          username: 'user1',
+          email: 'user1@test.com',
+          password: 'secret',
+          Roles: [{ name: 'buyer' }],
+        }),
+      ],
+      pagination: { total: 1, page: 1, totalPages: 1, limit: 10 },
     });
-  });
-
-  it('should handle search and pagination parameters', async () => {
-    const queryParams = {
-      search: 'test',
-      page: 2,
-      limit: 5,
-      sortBy: 'username',
-      sortOrder: 'ASC'
-    };
-
-    const mockUsers = [
-      { id: '3', username: 'test3', email: 'test3@test.com', Roles: [{ name: 'buyer' }] }
-    ];
-
-    const mockResult = {
-      users: mockUsers,
-      pagination: {
-        total: 6,
-        page: 2,
-        totalPages: 2,
-        limit: 5
-      }
-    };
-
-    mockUserRepository.findAll.mockResolvedValue(mockResult);
-
-    const result = await getAllUsers(queryParams);
-
-    expect(mockUserRepository.findAll).toHaveBeenCalledWith(queryParams);
-    expect(result).toEqual({
-      users: mockUsers.map(user => ({
-        ...user,
-        roles: user.Roles.map(role => role.name),
-        Roles: undefined
-      })),
-      pagination: mockResult.pagination
-    });
-  });
-
-  it('should handle empty result', async () => {
-    const mockResult = {
-      users: [],
-      pagination: {
-        total: 0,
-        page: 1,
-        totalPages: 0,
-        limit: 10
-      }
-    };
-
-    mockUserRepository.findAll.mockResolvedValue(mockResult);
 
     const result = await getAllUsers({});
 
     expect(mockUserRepository.findAll).toHaveBeenCalledWith({});
-    expect(result).toEqual({
+    expect(result.users).toHaveLength(1);
+    expect(result.users[0].password).toBeUndefined();
+    expect(result.users[0].roles).toEqual(['buyer']);
+    expect(result.users[0].Roles).toBeUndefined();
+    expect(result.pagination).toEqual({ total: 1, page: 1, totalPages: 1, limit: 10 });
+  });
+
+  it('mengembalikan daftar kosong dengan aman', async () => {
+    mockUserRepository.findAll.mockResolvedValue({
       users: [],
-      pagination: mockResult.pagination
+      pagination: { total: 0, page: 1, totalPages: 0, limit: 10 },
+    });
+
+    const result = await getAllUsers({});
+
+    expect(result.users).toEqual([]);
+    expect(result.pagination.total).toBe(0);
+  });
+});
+
+describe('userService.getProfile', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('melempar 404 saat user tidak ditemukan', async () => {
+    mockUserRepository.findById.mockResolvedValue(null);
+
+    await expect(getProfile('missing-id')).rejects.toMatchObject({
+      statusCode: 404,
+      message: 'User not found',
     });
   });
 
-  it('should handle repository errors', async () => {
-    mockUserRepository.findAll.mockRejectedValue(new Error('Database error'));
+  it('tidak membocorkan password', async () => {
+    mockUserRepository.findById.mockResolvedValue(
+      fakeUser({
+        id: 'u1',
+        username: 'ridwan',
+        email: 'ridwan@test.com',
+        password: 'hashed',
+        Roles: [{ name: 'seller' }],
+      }),
+    );
 
-    await expect(getAllUsers({})).rejects.toThrow('Database error');
-    expect(mockUserRepository.findAll).toHaveBeenCalledWith({});
+    const result = await getProfile('u1');
+
+    expect(result.password).toBeUndefined();
+    expect(result.roles).toEqual(['seller']);
+  });
+});
+
+describe('userService.updateProfile', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('melempar 404 saat user tidak ditemukan', async () => {
+    mockUserRepository.update.mockResolvedValue(null);
+
+    await expect(updateProfile('missing', { username: 'baru' })).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+
+  it('mengembalikan data user yang sudah disanitasi', async () => {
+    mockUserRepository.update.mockResolvedValue(
+      fakeUser({ id: 'u1', username: 'baru', password: 'hashed' }),
+    );
+
+    const result = await updateProfile('u1', { username: 'baru' });
+
+    expect(result.username).toBe('baru');
+    expect(result.password).toBeUndefined();
+  });
+});
+
+describe('userService.register', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('menolak email atau username yang sudah dipakai', async () => {
+    mockUserRepository.findByEmailOrUsername.mockResolvedValue({ id: 'existing' });
+
+    await expect(
+      register({
+        username: 'ridwan',
+        email: 'ridwan@test.com',
+        password: 'password123',
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: 'Email or username already exists',
+    });
+
+    expect(mockUserRepository.create).not.toHaveBeenCalled();
   });
 });

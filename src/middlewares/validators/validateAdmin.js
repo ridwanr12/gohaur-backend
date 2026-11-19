@@ -10,5 +10,5 @@ export const validateUpdateRole = [
       return roles.every(role => validRoles.includes(role));
     })
     .withMessage('Invalid role(s) provided'),
-  validateResult
+  validateResult,
 ];

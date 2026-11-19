@@ -4,44 +4,44 @@ export default {
       id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
-        primaryKey: true
+        primaryKey: true,
       },
       user_id: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'Users',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
       role_id: {
         type: Sequelize.UUID,
         allowNull: false,
         references: {
           model: 'Roles',
-          key: 'id'
+          key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'CASCADE'
+        onDelete: 'CASCADE',
       },
       assigned_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-      }
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+      },
     });
 
     // Add composite unique constraint
     await queryInterface.addConstraint('user_roles', {
       fields: ['user_id', 'role_id'],
       type: 'unique',
-      name: 'unique_user_role'
+      name: 'unique_user_role',
     });
   },
 
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('user_roles');
-  }
+  },
 };

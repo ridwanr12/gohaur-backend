@@ -7,17 +7,12 @@ import { readdirSync } from 'fs';
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
 
-const sequelize = new Sequelize(
-  dbConfig.database,
-  dbConfig.username,
-  dbConfig.password,
-  {
-    host: dbConfig.host,
-    port: dbConfig.port,
-    dialect: dbConfig.dialect,
-    logging: false // Set to console.log to see SQL queries
-  }
-);
+const sequelize = new Sequelize(dbConfig.database, dbConfig.username, dbConfig.password, {
+  host: dbConfig.host,
+  port: dbConfig.port,
+  dialect: dbConfig.dialect,
+  logging: false, // Set to console.log to see SQL queries
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,12 +20,9 @@ const __dirname = dirname(__filename);
 const models = {};
 
 // Import all model files
-const modelFiles = readdirSync(__dirname)
-  .filter(file => 
-    file.indexOf('.') !== 0 && 
-    file !== 'index.js' && 
-    file.slice(-3) === '.js'
-  );
+const modelFiles = readdirSync(__dirname).filter(
+  file => file.indexOf('.') !== 0 && file !== 'index.js' && file.slice(-3) === '.js',
+);
 
 // Initialize models
 for (const file of modelFiles) {

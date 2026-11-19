@@ -13,7 +13,7 @@ async function getStoreProducts(req, res) {
   const result = await productService.getStoreProducts(storeId, {
     page: parseInt(page) || 1,
     limit: parseInt(limit) || 10,
-    search
+    search,
   });
   res.json(ApiResponse.success(result));
 }
@@ -21,21 +21,21 @@ async function getStoreProducts(req, res) {
 async function createProduct(req, res) {
   const productData = {
     ...req.body,
-    store_id: req.params.storeId
+    store_id: req.params.storeId,
   };
-  const product = await productService.createProduct(productData);
+  const product = await productService.createProduct(productData, req.user.id);
   res.status(201).json(ApiResponse.success({ product }, 'Product created successfully'));
 }
 
 async function updateProduct(req, res) {
   const { id } = req.params;
-  const product = await productService.updateProduct(id, req.body);
+  const product = await productService.updateProduct(id, req.body, req.user.id);
   res.json(ApiResponse.success({ product }, 'Product updated successfully'));
 }
 
 async function deleteProduct(req, res) {
   const { id } = req.params;
-  await productService.deleteProduct(id);
+  await productService.deleteProduct(id, req.user);
   res.json(ApiResponse.success(null, 'Product deleted successfully'));
 }
 
@@ -45,7 +45,7 @@ async function getAllProducts(req, res) {
     page: parseInt(page) || 1,
     limit: parseInt(limit) || 10,
     search,
-    storeId
+    storeId,
   });
   res.json(ApiResponse.success(products));
 }
@@ -56,5 +56,5 @@ export {
   createProduct,
   updateProduct,
   deleteProduct,
-  getAllProducts
+  getAllProducts,
 };

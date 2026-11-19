@@ -24,32 +24,66 @@ async function createStore(storeData) {
   }
   return await storeRepository.create(storeData);
 }
+const STORE_EDITABLE_FIELDS = ['name', 'description', 'image', 'address', 'latitude', 'longitude'];
 
-async function updateStore(id, updateData) {
-  const store = await storeRepository.update(id, updateData);
-  if (!store) {
-    throw new AppError('Store not found', 404);
-  }
-  return store;
+function pickEditableFields(updateData) {
+  const picked = {};
+  STORE_EDITABLE_FIELDS.forEach(field => {
+    if (updateData[field] !== undefined) {
+      picked[field] = updateData[field];
+    }
+  });
+  return picked;
 }
 
-async function deleteStore(id) {
-  const result = await storeRepository.remove(id);
-  if (!result) {
+async function updateStore(id, updateData, requesterId) {
+  const existingStore = await storeRepository.findById(id);
+  if (!existingStore) {
     throw new AppError('Store not found', 404);
   }
-  return result;
+  if (existingStore.user_id !== requesterId) {
+    throw new AppError('You are not allowed to update this store', 403);
+  }
+
+  const payload = pickEditableFields(updateData);
+
+  if (payload.latitude !== undefined && payload.latitude !== null) {
+    const lat = Number(payload.latitude);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) {
+      throw new AppError('Invalid store latitude', 400);
+    }
+    payload.latitude = lat;
+  }
+  if (payload.longitude !== undefined && payload.longitude !== null) {
+    const lng = Number(payload.longitude);
+    if (!Number.isFinite(lng) || Math.abs(lng) > 180) {
+      throw new AppError('Invalid store longitude', 400);
+    }
+    payload.longitude = lng;
+  }
+
+  return await storeRepository.update(id, payload);
 }
 
-async function getAllStores({ page, limit, search, showProducts = false, showRating = false } = {}) {
+async function deleteStore(id, requesterId) {
+  const existingStore = await storeRepository.findById(id);
+  if (!existingStore) {
+    throw new AppError('Store not found', 404);
+  }
+  if (existingStore.user_id !== requesterId) {
+    throw new AppError('You are not allowed to delete this store', 403);
+  }
+  return await storeRepository.remove(id);
+}
+
+async function getAllStores({
+  page,
+  limit,
+  search,
+  showProducts = false,
+  showRating = false,
+} = {}) {
   return await storeRepository.findAll({ page, limit, search, showProducts, showRating });
 }
 
-export {
-  getStoreById,
-  getStoreByUserId,
-  createStore,
-  updateStore,
-  deleteStore,
-  getAllStores
-};
+export { getStoreById, getStoreByUserId, createStore, updateStore, deleteStore, getAllStores };

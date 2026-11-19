@@ -4,10 +4,12 @@ const { Rating, Store } = models;
 async function findByStoreId(storeId) {
   return await Rating.findOne({
     where: { store_id: storeId },
-    include: [{
-      model: Store,
-      attributes: ['id', 'name', 'description']
-    }]
+    include: [
+      {
+        model: Store,
+        attributes: ['id', 'name', 'description'],
+      },
+    ],
   });
 }
 
@@ -18,8 +20,8 @@ async function createOrUpdate(storeId, newRating) {
     defaults: {
       store_id: storeId,
       average_rating: newRating,
-      amount: 1
-    }
+      amount: 1,
+    },
   });
 
   // If rating entry already exists, update it
@@ -27,7 +29,7 @@ async function createOrUpdate(storeId, newRating) {
     const newAverage = (rating.average_rating * rating.amount + newRating) / (rating.amount + 1);
     await rating.update({
       average_rating: parseFloat(newAverage.toFixed(2)),
-      amount: rating.amount + 1
+      amount: rating.amount + 1,
     });
     return await findByStoreId(storeId);
   }
@@ -43,7 +45,7 @@ async function recalculateOnDelete(storeId, deletedRating) {
   if (rating.amount <= 1) {
     await rating.update({
       average_rating: 0,
-      amount: 0
+      amount: 0,
     });
     return rating;
   }
@@ -52,14 +54,10 @@ async function recalculateOnDelete(storeId, deletedRating) {
   const newAverage = (rating.average_rating * rating.amount - deletedRating) / (rating.amount - 1);
   await rating.update({
     average_rating: parseFloat(newAverage.toFixed(2)),
-    amount: rating.amount - 1
+    amount: rating.amount - 1,
   });
 
   return await findByStoreId(storeId);
 }
 
-export {
-  findByStoreId,
-  createOrUpdate,
-  recalculateOnDelete
-};
+export { findByStoreId, createOrUpdate, recalculateOnDelete };

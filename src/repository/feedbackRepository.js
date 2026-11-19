@@ -10,17 +10,17 @@ async function findById(id) {
     include: [
       {
         model: User,
-        attributes: ['id', 'username', 'email']
+        attributes: ['id', 'username', 'email'],
       },
       {
         model: Store,
-        attributes: ['id', 'name', 'description']
+        attributes: ['id', 'name', 'description'],
       },
       {
         model: Order,
-        attributes: ['id', 'status', 'total_price']
-      }
-    ]
+        attributes: ['id', 'status', 'total_price'],
+      },
+    ],
   });
 }
 
@@ -30,34 +30,34 @@ async function findByOrderId(orderId) {
     include: [
       {
         model: User,
-        attributes: ['id', 'username', 'email']
+        attributes: ['id', 'username', 'email'],
       },
       {
         model: Store,
-        attributes: ['id', 'name', 'description']
-      }
-    ]
+        attributes: ['id', 'name', 'description'],
+      },
+    ],
   });
 }
 
 async function findByStoreId(storeId, { page = 1, limit = 10 } = {}) {
   const offset = (page - 1) * limit;
-  
+
   const { rows: feedbacks, count: total } = await Feedback.findAndCountAll({
     where: { store_id: storeId },
     include: [
       {
         model: User,
-        attributes: ['id', 'username', 'email']
+        attributes: ['id', 'username', 'email'],
       },
       {
         model: Order,
-        attributes: ['id', 'status', 'total_price']
-      }
+        attributes: ['id', 'status', 'total_price'],
+      },
     ],
     limit,
     offset,
-    order: [['created_at', 'DESC']]
+    order: [['created_at', 'DESC']],
   });
 
   return {
@@ -66,8 +66,8 @@ async function findByStoreId(storeId, { page = 1, limit = 10 } = {}) {
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit),
-      limit: parseInt(limit)
-    }
+      limit: parseInt(limit),
+    },
   };
 }
 
@@ -84,11 +84,4 @@ async function remove(id) {
   return true;
 }
 
-export {
-  create,
-  findById,
-  findByOrderId,
-  findByStoreId,
-  update,
-  remove
-};
+export { create, findById, findByOrderId, findByStoreId, update, remove };

@@ -1,26 +1,31 @@
+import { Op } from 'sequelize';
 import models from '../models/index.js';
 const { Store, User, Product, Rating } = models;
 
 async function findById(id) {
   return await Store.findByPk(id, {
-    include: [{
-      model: User,
-      attributes: ['id', 'username', 'email']
-    }]
+    include: [
+      {
+        model: User,
+        attributes: ['id', 'username', 'email'],
+      },
+    ],
   });
 }
 
 async function findByUserId(userId) {
   return await Store.findOne({
     where: { user_id: userId },
-    include: [{
-      model: User,
-      attributes: ['id', 'username', 'email']
-    },
-    {
-      model: Product,
-      attributes: ['id', 'name', 'description', 'price', 'stock', 'images']
-    }]
+    include: [
+      {
+        model: User,
+        attributes: ['id', 'username', 'email'],
+      },
+      {
+        model: Product,
+        attributes: ['id', 'name', 'description', 'price', 'stock', 'images'],
+      },
+    ],
   });
 }
 
@@ -41,30 +46,38 @@ async function remove(id) {
   return true;
 }
 
-async function findAll({ page = 1, limit = 10, search = '', showProducts = false, showRating = false } = {}) {
+async function findAll({
+  page = 1,
+  limit = 10,
+  search = '',
+  showProducts = false,
+  showRating = false,
+} = {}) {
   const offset = (page - 1) * limit;
-  const where = search ? {
-    name: { [models.Sequelize.Op.iLike]: `%${search}%` }
-  } : {};
+  const where = search
+    ? {
+        name: { [Op.iLike]: `%${search}%` },
+      }
+    : {};
 
-  const include = [{
-    model: User,
-    attributes: ['id', 'username', 'email']
-  }];
+  const include = [
+    {
+      model: User,
+      attributes: ['id', 'username', 'email'],
+    },
+  ];
 
   if (showProducts) {
     include.push({
       model: Product,
-      attributes: ['id', 'name', 'description', 'price', 'stock', 'images']
+      attributes: ['id', 'name', 'description', 'price', 'stock', 'images'],
     });
   }
-
-  console.log(showRating)
 
   if (showRating) {
     include.push({
       model: Rating,
-      attributes: ['id', 'store_id', 'average_rating', 'amount', 'created_at']
+      attributes: ['id', 'store_id', 'average_rating', 'amount', 'created_at'],
     });
   }
 
@@ -72,7 +85,7 @@ async function findAll({ page = 1, limit = 10, search = '', showProducts = false
     where,
     include,
     limit,
-    offset
+    offset,
   });
 
   return {
@@ -81,16 +94,9 @@ async function findAll({ page = 1, limit = 10, search = '', showProducts = false
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit),
-      limit: parseInt(limit)
-    }
+      limit: parseInt(limit),
+    },
   };
 }
 
-export {
-  findById,
-  findByUserId,
-  create,
-  update,
-  remove,
-  findAll
-};
+export { findById, findByUserId, create, update, remove, findAll };

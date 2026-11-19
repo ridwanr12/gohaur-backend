@@ -1,6 +1,6 @@
 import { Model, DataTypes } from 'sequelize';
 
-export default (sequelize) => {
+export default sequelize => {
   class Store extends Model {
     static associate(models) {
       Store.belongsTo(models.User, { foreignKey: 'user_id' });
@@ -10,38 +10,53 @@ export default (sequelize) => {
     }
   }
 
-  Store.init({
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+  Store.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      user_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'id',
+        },
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notEmpty: true,
+          len: [3, 255],
+        },
+      },
+      description: {
+        type: DataTypes.TEXT,
+      },
+      image: {
+        type: DataTypes.TEXT,
+      },
+      address: {
+        type: DataTypes.TEXT,
+      },
+      latitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
+      longitude: {
+        type: DataTypes.DECIMAL(10, 7),
+      },
     },
-    user_id: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: 'Users',
-        key: 'id'
-      }
+    {
+      sequelize,
+      modelName: 'Store',
+      timestamps: true,
+      createdAt: 'created_at',
+      updatedAt: false,
     },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [3, 255]
-      }
-    },
-    description: {
-      type: DataTypes.TEXT
-    }
-  }, {
-    sequelize,
-    modelName: 'Store',
-    timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: false
-  });
+  );
 
   return Store;
 };

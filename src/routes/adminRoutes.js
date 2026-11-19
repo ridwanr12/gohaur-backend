@@ -2,11 +2,7 @@ import { Router } from 'express';
 import authMiddleware from '../middlewares/auth.js';
 import checkRole from '../middlewares/checkRole.js';
 import { validateUpdateRole } from '../middlewares/validators/validateAdmin.js';
-import {
-  getAllUsers,
-  getUser,
-  updateUserRole
-} from '../controllers/adminController.js';
+import { getAllUsers, getUser, updateUserRole } from '../controllers/adminController.js';
 
 const router = Router();
 

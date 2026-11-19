@@ -6,9 +6,12 @@ import {
   getOrderFeedback,
   updateFeedback,
   deleteFeedback,
-  getStoreRating
+  getStoreRating,
 } from '../controllers/feedbackController.js';
-import { validateCreateFeedback, validateUpdateFeedback } from '../middlewares/validators/validateFeedback.js';
+import {
+  validateCreateFeedback,
+  validateUpdateFeedback,
+} from '../middlewares/validators/validateFeedback.js';
 import authMiddleware from '../middlewares/auth.js';
 import checkRole from '../middlewares/checkRole.js';
 
@@ -31,22 +34,11 @@ router.get('/:id', getFeedback);
 router.use(authMiddleware);
 
 // Buyer routes (only buyers can create/update/delete feedback)
-router.post('/', 
-  checkRole(['buyer']), 
-  validateCreateFeedback, 
-  createFeedback
-);
+router.post('/', checkRole(['buyer']), validateCreateFeedback, createFeedback);
 
-router.put('/:id', 
-  checkRole(['buyer']), 
-  validateUpdateFeedback, 
-  updateFeedback
-);
+router.put('/:id', checkRole(['buyer']), validateUpdateFeedback, updateFeedback);
 
-router.delete('/:id', 
-  checkRole(['buyer']), 
-  deleteFeedback
-);
+router.delete('/:id', checkRole(['buyer']), deleteFeedback);
 
 export default router;
 
@@ -125,7 +117,7 @@ export default router;
  *         description: Invalid input or feedback already exists
  *       404:
  *         description: Order not found
- * 
+ *
  * /api/feedback/{id}:
  *   get:
  *     summary: Get feedback by ID
@@ -193,7 +185,7 @@ export default router;
  *         description: Not authorized to delete this feedback
  *       404:
  *         description: Feedback not found
- * 
+ *
  * /api/feedback/store/{storeId}:
  *   get:
  *     summary: Get store feedbacks
@@ -216,7 +208,7 @@ export default router;
  *     responses:
  *       200:
  *         description: List of store feedbacks
- * 
+ *
  * /api/feedback/store/{storeId}/rating:
  *   get:
  *     summary: Get store rating
@@ -231,7 +223,7 @@ export default router;
  *     responses:
  *       200:
  *         description: Store rating details
- * 
+ *
  * /api/feedback/order/{orderId}:
  *   get:
  *     summary: Get order feedback

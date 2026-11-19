@@ -5,9 +5,12 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-  getAllProducts
+  getAllProducts,
 } from '../controllers/productController.js';
-import { validateCreateProduct, validateUpdateProduct } from '../middlewares/validators/validateProduct.js';
+import {
+  validateCreateProduct,
+  validateUpdateProduct,
+} from '../middlewares/validators/validateProduct.js';
 import authMiddleware from '../middlewares/auth.js';
 import checkRole from '../middlewares/checkRole.js';
 
@@ -150,11 +153,7 @@ router.use(authMiddleware);
  *       201:
  *         description: Product created successfully
  */
-router.post('/store/:storeId',
-  checkRole(['seller']),
-  validateCreateProduct,
-  createProduct
-);
+router.post('/store/:storeId', checkRole(['seller']), validateCreateProduct, createProduct);
 
 /**
  * @swagger
@@ -197,11 +196,7 @@ router.post('/store/:storeId',
  *       200:
  *         description: Product updated successfully
  */
-router.put('/:id',
-  checkRole(['seller']),
-//   validateUpdateProduct,
-  updateProduct
-);
+router.put('/:id', checkRole(['seller']), validateUpdateProduct, updateProduct);
 
 /**
  * @swagger
@@ -222,9 +217,6 @@ router.put('/:id',
  *       200:
  *         description: Product deleted successfully
  */
-router.delete('/:id',
-  checkRole(['seller', 'admin']),
-  deleteProduct
-);
+router.delete('/:id', checkRole(['seller', 'admin']), deleteProduct);
 
 export default router;

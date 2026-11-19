@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { validateUpdateProfile } from '../middlewares/validators/validateAuth.js';
 import authMiddleware from '../middlewares/auth.js';
-import { 
-  getProfile,
-  updateProfile,
-  deleteAccount
-} from '../controllers/userController.js';
+import { getProfile, updateProfile, deleteAccount } from '../controllers/userController.js';
 
 const router = Router();
 

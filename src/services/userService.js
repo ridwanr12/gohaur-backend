@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import * as userRepository from '../repository/userRepository.js';
 import AppError from '../utils/AppError.js';
 import JwtUtils from '../utils/jwt.js';
-import asyncHandler from '../middlewares/asyncHandler.js';
 
 class UserDTO {
   constructor(data) {
@@ -17,32 +16,32 @@ class UserDTO {
 
 async function register(userData) {
   const dto = new UserDTO(userData);
-  const role = userData.role || "buyer";
-  
+  const role = userData.role || 'buyer';
+
   const existingUser = await userRepository.findByEmailOrUsername(dto.email, dto.username);
   if (existingUser) {
     throw new AppError('Email or username already exists', 400);
   }
 
   const hashedPassword = await bcrypt.hash(dto.password, 10);
-  
+
   const user = await userRepository.create({
     id: uuidv4(),
     ...dto,
-    password: hashedPassword
+    password: hashedPassword,
   });
 
   await userRepository.assignRole(user, role);
 
-  const token = JwtUtils.generateToken({ 
+  const token = JwtUtils.generateToken({
     id: user.id,
     email: user.email,
-    roles: [role]
+    roles: [role],
   });
 
   return {
     user: sanitizeUser(user),
-    token
+    token,
   };
 }
 
@@ -60,12 +59,12 @@ async function login(credentials) {
   const token = JwtUtils.generateToken({
     id: user.id,
     email: user.email,
-    roles: user.Roles.map(role => role.name)
+    roles: user.Roles.map(role => role.name),
   });
 
   return {
     user: sanitizeUser(user),
-    token
+    token,
   };
 }
 
@@ -78,7 +77,37 @@ async function getProfile(userId) {
 }
 
 async function updateProfile(userId, updateData) {
-  const user = await userRepository.update(userId, updateData);
+  const editable = {};
+  [
+    'username',
+    'phone',
+    'location',
+    'bank_name',
+    'bank_account_number',
+    'bank_account_holder',
+  ].forEach(field => {
+    if (updateData[field] !== undefined) {
+      editable[field] = updateData[field];
+    }
+  });
+
+  if (updateData.latitude !== undefined && updateData.latitude !== null) {
+    const lat = Number(updateData.latitude);
+    if (!Number.isFinite(lat) || Math.abs(lat) > 90) {
+      throw new AppError('Invalid latitude', 400);
+    }
+    editable.latitude = lat;
+  }
+
+  if (updateData.longitude !== undefined && updateData.longitude !== null) {
+    const lng = Number(updateData.longitude);
+    if (!Number.isFinite(lng) || Math.abs(lng) > 180) {
+      throw new AppError('Invalid longitude', 400);
+    }
+    editable.longitude = lng;
+  }
+
+  const user = await userRepository.update(userId, editable);
   if (!user) {
     throw new AppError('User not found', 404);
   }
@@ -97,7 +126,7 @@ async function getAllUsers(queryParams) {
   const result = await userRepository.findAll(queryParams);
   return {
     users: result.users.map(user => sanitizeUser(user)),
-    pagination: result.pagination
+    pagination: result.pagination,
   };
 }
 
@@ -121,14 +150,14 @@ async function updateUserRole(userId, roles) {
 }
 
 function sanitizeUser(user) {
-    const sanitized = user.toJSON();
-    delete sanitized.password;
-    if (sanitized.Roles) {
-      sanitized.roles = sanitized.Roles.map(role => role.name);
-      delete sanitized.Roles;
-    }
-    return sanitized;
+  const sanitized = user.toJSON();
+  delete sanitized.password;
+  if (sanitized.Roles) {
+    sanitized.roles = sanitized.Roles.map(role => role.name);
+    delete sanitized.Roles;
   }
+  return sanitized;
+}
 
 export {
   register,
@@ -139,5 +168,5 @@ export {
   getAllUsers,
   getUserById,
   updateUserRole,
-  sanitizeUser
+  sanitizeUser,
 };

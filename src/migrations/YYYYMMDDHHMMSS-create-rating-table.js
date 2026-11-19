@@ -3,7 +3,7 @@ export async function up(queryInterface, Sequelize) {
     id: {
       type: Sequelize.UUID,
       defaultValue: Sequelize.UUIDV4,
-      primaryKey: true
+      primaryKey: true,
     },
     store_id: {
       type: Sequelize.UUID,
@@ -11,31 +11,31 @@ export async function up(queryInterface, Sequelize) {
       unique: true,
       references: {
         model: 'Stores',
-        key: 'id'
+        key: 'id',
       },
       onUpdate: 'CASCADE',
-      onDelete: 'CASCADE'
+      onDelete: 'CASCADE',
     },
     average_rating: {
       type: Sequelize.FLOAT,
       allowNull: false,
-      defaultValue: 0
+      defaultValue: 0,
     },
     amount: {
       type: Sequelize.INTEGER,
       allowNull: false,
-      defaultValue: 0
+      defaultValue: 0,
     },
     created_at: {
       type: Sequelize.DATE,
       allowNull: false,
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     },
     updated_at: {
       type: Sequelize.DATE,
       allowNull: false,
-      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
-    }
+      defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+    },
   });
 }
 
