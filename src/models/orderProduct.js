@@ -3,7 +3,8 @@ import { Model, DataTypes } from 'sequelize';
 export default sequelize => {
   class OrderProduct extends Model {
     static associate(models) {
-      // Through table associations are handled in Order and Product models
+      // Relasi ke Order dibutuhkan untuk agregasi statistik toko.
+      OrderProduct.belongsTo(models.Order, { foreignKey: 'order_id' });
     }
   }
 
